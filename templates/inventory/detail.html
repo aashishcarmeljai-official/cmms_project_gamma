@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Details - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/inventory">Inventory</a></li>
+                        <li class="breadcrumb-item active">{{ inventory.name }}</li>
+                    </ol>
+                </nav>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="h3 mb-0">
+                            <i class="fas fa-box text-primary me-2"></i>
+                            {{ inventory.name }}
+                        </h1>
+                        <p class="text-muted mb-0">{{ inventory.part_number }} • {{ inventory.category or 'No category' }}</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#adjustStockModal">
+                            <i class="fas fa-edit me-2"></i>Adjust Stock
+                        </button>
+                        <a href="/inventory" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Status Banner -->
+        <div class="row mb-4">
+            <div class="col-12">
+                {% if inventory.current_stock <= inventory.minimum_stock %}
+                    <div class="alert alert-danger d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert!</strong>
+                            Current stock ({{ inventory.current_stock }}) is at or below minimum level ({{ inventory.minimum_stock }})
+                        </div>
+                        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#adjustStockModal">
+                            <i class="fas fa-plus me-1"></i>Add Stock
+                        </button>
+                    </div>
+                {% elif inventory.maximum_stock and inventory.current_stock >= inventory.maximum_stock %}
+                    <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-info-circle me-2"></i>High Stock Level</strong>
+                            Current stock ({{ inventory.current_stock }}) is at or above maximum level ({{ inventory.maximum_stock }})
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-check-circle me-2"></i>Stock Level Normal</strong>
+                            Current stock: {{ inventory.current_stock }} {{ inventory.unit_of_measure }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Inventory Information -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Item Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Part Number:</strong></td>
+                                <td>{{ inventory.part_number }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ inventory.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Category:</strong></td>
+                                <td>{{ inventory.category or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Location:</strong></td>
+                                <td>{{ inventory.location or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    {% if inventory.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Stock Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Stock Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <h4 class="text-primary">{{ inventory.current_stock }}</h4>
+                                <small class="text-muted">Current</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-warning">{{ inventory.minimum_stock }}</h4>
+                                <small class="text-muted">Minimum</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-info">{{ inventory.maximum_stock or '∞' }}</h4>
+                                <small class="text-muted">Maximum</small>
+                            </div>
+                        </div>
+                        
+                        {% if inventory.maximum_stock and inventory.maximum_stock > 0 %}
+                            {% set stock_percentage = ((inventory.current_stock / inventory.maximum_stock) * 100) | round(1) %}
+                        {% else %}
+                            {% set stock_percentage = 0 %}
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Stock Level</label>
+                            <div class="progress">
+                                <div class="progress-bar bg-{{ 'danger' if stock_percentage < 20 else 'warning' if stock_percentage < 50 else 'success' }}" 
+                                     role="progressbar" 
+                                     style="width: {{ stock_percentage }}%"
+                                     aria-valuenow="{{ stock_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ stock_percentage }}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Unit of Measure:</strong></td>
+                                <td>{{ inventory.unit_of_measure }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unit Cost:</strong></td>
+                                <td>
+                                    {% if inventory.unit_cost %}
+                                        ${{ "%.2f"|format(inventory.unit_cost) }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Value:</strong></td>
+                                <td>
+                                    {% if inventory.unit_cost %}
+                                        ${{ "%.2f"|format(inventory.unit_cost * inventory.current_stock) }}
+                                    {% else %}
+                                        <span class="text-muted">Not calculated</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#adjustStockModal">
+                                <i class="fas fa-edit me-2"></i>Adjust Stock
+                            </button>
+                            <a href="/work-orders/new" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-2"></i>Create Work Order
+                            </a>
+                            <a href="/inventory" class="btn btn-outline-secondary">
+                                <i class="fas fa-list me-2"></i>View All Inventory
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-8">
+                <!-- Description -->
+                {% if inventory.description %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>Description
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ inventory.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Supplier Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-truck me-2"></i>Supplier Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Manufacturer:</strong></td>
+                                        <td>{{ inventory.manufacturer or 'Not specified' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Supplier:</strong></td>
+                                        <td>{{ inventory.supplier or 'Not specified' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Unit Cost:</strong></td>
+                                        <td>
+                                            {% if inventory.unit_cost %}
+                                                ${{ "%.2f"|format(inventory.unit_cost) }}
+                                            {% else %}
+                                                <span class="text-muted">Not specified</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Updated:</strong></td>
+                                        <td>{{ inventory.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Usage History
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if inventory.work_orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Work Order</th>
+                                            <th>Equipment</th>
+                                            <th>Quantity Used</th>
+                                            <th>Date</th>
+                                            <th>Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for usage in inventory.work_orders[:10] %}
+                                        <tr>
+                                            <td>
+                                                <a href="/work-orders/{{ usage.work_order_id }}" class="text-decoration-none">
+                                                    {{ usage.work_order.work_order_number if usage.work_order else 'Unknown' }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if usage.work_order and usage.work_order.equipment %}
+                                                    {{ usage.work_order.equipment.name }}
+                                                {% else %}
+                                                    <span class="text-muted">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ usage.quantity_used }} {{ inventory.unit_of_measure }}</td>
+                                            <td>{{ usage.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                {% if usage.unit_cost %}
+                                                    ${{ "%.2f"|format(usage.unit_cost * usage.quantity_used) }}
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No usage history found for this item</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Adjust Stock Modal -->
+    <div class="modal fade" id="adjustStockModal" tabindex="-1" aria-labelledby="adjustStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adjustStockModalLabel">
+                        <i class="fas fa-edit me-2"></i>Adjust Stock Level
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="adjustStockForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="currentStock" class="form-label">Current Stock</label>
+                            <input type="number" class="form-control" id="currentStock" value="{{ inventory.current_stock }}" min="0" required>
+                            <div class="form-text">Current stock level: {{ inventory.current_stock }} {{ inventory.unit_of_measure }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adjustmentType" class="form-label">Adjustment Type</label>
+                            <select class="form-select" id="adjustmentType" required>
+                                <option value="add">Add Stock</option>
+                                <option value="remove">Remove Stock</option>
+                                <option value="set">Set Stock Level</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adjustmentAmount" class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="adjustmentAmount" min="1" required>
+                            <div class="form-text">Amount to add, remove, or set</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adjustmentReason" class="form-label">Reason</label>
+                            <textarea class="form-control" id="adjustmentReason" rows="3" placeholder="Reason for stock adjustment"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Stock adjustment form handling
+        document.getElementById('adjustStockForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentStock = parseInt(document.getElementById('currentStock').value);
+            const adjustmentType = document.getElementById('adjustmentType').value;
+            const adjustmentAmount = parseInt(document.getElementById('adjustmentAmount').value);
+            const reason = document.getElementById('adjustmentReason').value;
+            
+            if (!currentStock || !adjustmentAmount) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            let newStock;
+            switch (adjustmentType) {
+                case 'add':
+                    newStock = currentStock + adjustmentAmount;
+                    break;
+                case 'remove':
+                    if (adjustmentAmount > currentStock) {
+                        alert('Cannot remove more stock than available.');
+                        return;
+                    }
+                    newStock = currentStock - adjustmentAmount;
+                    break;
+                case 'set':
+                    newStock = adjustmentAmount;
+                    break;
+            }
+            
+            if (newStock < 0) {
+                alert('Stock level cannot be negative.');
+                return;
+            }
+            
+            // Here you would typically send the data to the server
+            // For now, we'll just show a confirmation
+            if (confirm(`Update stock from ${currentStock} to ${newStock}?`)) {
+                alert('Stock updated successfully! (This is a demo - no actual update performed)');
+                document.getElementById('adjustStockModal').querySelector('.btn-close').click();
+            }
+        });
+        
+        // Update adjustment amount when type changes
+        document.getElementById('adjustmentType').addEventListener('change', function() {
+            const adjustmentAmount = document.getElementById('adjustmentAmount');
+            const currentStock = document.getElementById('currentStock').value;
+            
+            if (this.value === 'set') {
+                adjustmentAmount.value = currentStock;
+                adjustmentAmount.placeholder = 'Enter new stock level';
+            } else {
+                adjustmentAmount.value = '';
+                adjustmentAmount.placeholder = this.value === 'add' ? 'Amount to add' : 'Amount to remove';
+            }
+        });
+    </script>
+</body>
+</html> 

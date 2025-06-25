@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Details - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/equipment">Equipment</a></li>
+                        <li class="breadcrumb-item active">{{ equipment.name }}</li>
+                    </ol>
+                </nav>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="h3 mb-0">
+                            <i class="fas fa-cog text-primary me-2"></i>
+                            {{ equipment.name }}
+                        </h1>
+                        <p class="text-muted mb-0">{{ equipment.equipment_id }} • {{ equipment.location or 'No location' }}</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/work-orders/new?equipment_id={{ equipment.id }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Work Order
+                        </a>
+                        <a href="/equipment" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Status Banner -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-{{ 'success' if equipment.status == 'operational' else 'warning' if equipment.status == 'maintenance' else 'danger' }} d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Status:</strong> {{ equipment.status.replace('_', ' ').title() }}
+                        <span class="badge bg-{{ 'success' if equipment.criticality == 'low' else 'info' if equipment.criticality == 'medium' else 'warning' if equipment.criticality == 'high' else 'danger' }} ms-2">
+                            {{ equipment.criticality.title() }} Criticality
+                        </span>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary">{{ equipment.category }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Equipment Information -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Equipment Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Equipment ID:</strong></td>
+                                <td>{{ equipment.equipment_id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ equipment.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Category:</strong></td>
+                                <td>{{ equipment.category }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Location:</strong></td>
+                                <td>{{ equipment.location or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Department:</strong></td>
+                                <td>{{ equipment.department or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if equipment.status == 'operational' else 'warning' if equipment.status == 'maintenance' else 'danger' }}">
+                                        {{ equipment.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Criticality:</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if equipment.criticality == 'low' else 'info' if equipment.criticality == 'medium' else 'warning' if equipment.criticality == 'high' else 'danger' }}">
+                                        {{ equipment.criticality.title() }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Technical Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-wrench me-2"></i>Technical Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Manufacturer:</strong></td>
+                                <td>{{ equipment.manufacturer or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Model:</strong></td>
+                                <td>{{ equipment.model or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Serial Number:</strong></td>
+                                <td>{{ equipment.serial_number or 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Purchase Date:</strong></td>
+                                <td>{{ equipment.purchase_date.strftime('%Y-%m-%d') if equipment.purchase_date else 'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Warranty Expiry:</strong></td>
+                                <td>
+                                    {% if equipment.warranty_expiry %}
+                                        {% if equipment.warranty_expiry < today %}
+                                            <span class="text-danger">{{ equipment.warranty_expiry.strftime('%Y-%m-%d') }} (Expired)</span>
+                                        {% else %}
+                                            <span class="text-success">{{ equipment.warranty_expiry.strftime('%Y-%m-%d') }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/work-orders/new?equipment_id={{ equipment.id }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Work Order
+                            </a>
+                            <a href="/work-orders?equipment_id={{ equipment.id }}" class="btn btn-outline-primary">
+                                <i class="fas fa-clipboard-list me-2"></i>View Work Orders
+                            </a>
+                            <a href="/inventory" class="btn btn-outline-info">
+                                <i class="fas fa-boxes me-2"></i>Check Inventory
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-8">
+                <!-- Description & Specifications -->
+                {% if equipment.description or equipment.specifications %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>Description & Specifications
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if equipment.description %}
+                        <h6>Description</h6>
+                        <p>{{ equipment.description }}</p>
+                        {% endif %}
+                        
+                        {% if equipment.specifications %}
+                        <h6>Technical Specifications</h6>
+                        <p>{{ equipment.specifications }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recent Work Orders -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-list me-2"></i>Recent Work Orders
+                        </h5>
+                        <a href="/work-orders?equipment_id={{ equipment.id }}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if work_orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Work Order</th>
+                                            <th>Title</th>
+                                            <th>Status</th>
+                                            <th>Priority</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for wo in work_orders %}
+                                        <tr>
+                                            <td>
+                                                <a href="/work-orders/{{ wo.id }}" class="text-decoration-none">
+                                                    {{ wo.work_order_number }}
+                                                </a>
+                                            </td>
+                                            <td>{{ wo.title }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if wo.status == 'completed' else 'warning' if wo.status == 'in_progress' else 'danger' if wo.status == 'cancelled' else 'secondary' }}">
+                                                    {{ wo.status.replace('_', ' ').title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ 'danger' if wo.priority == 'urgent' else 'warning' if wo.priority == 'high' else 'info' if wo.priority == 'medium' else 'secondary' }}">
+                                                    {{ wo.priority.title() }}
+                                                </span>
+                                            </td>
+                                            <td>{{ wo.created_at.strftime('%Y-%m-%d') }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No work orders found for this equipment</p>
+                                <a href="/work-orders/new?equipment_id={{ equipment.id }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create First Work Order
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Maintenance Schedules -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>Maintenance Schedules
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if maintenance_schedules %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Frequency</th>
+                                            <th>Last Performed</th>
+                                            <th>Next Due</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for schedule in maintenance_schedules %}
+                                        <tr>
+                                            <td>{{ schedule.description }}</td>
+                                            <td>{{ schedule.frequency_value }} {{ schedule.frequency }}{{ 's' if schedule.frequency_value > 1 else '' }}</td>
+                                            <td>
+                                                {% if schedule.last_performed %}
+                                                    {{ schedule.last_performed.strftime('%Y-%m-%d') }}
+                                                {% else %}
+                                                    <span class="text-muted">Never</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if schedule.next_due %}
+                                                    {% if schedule.next_due < today %}
+                                                        <span class="text-danger">{{ schedule.next_due.strftime('%Y-%m-%d') }} (Overdue)</span>
+                                                    {% else %}
+                                                        {{ schedule.next_due.strftime('%Y-%m-%d') }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">Not scheduled</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if schedule.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No maintenance schedules found for this equipment</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

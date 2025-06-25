@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Equipment - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/equipment">Equipment</a></li>
+                        <li class="breadcrumb-item active">Add Equipment</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-plus text-primary me-2"></i>
+                    Add New Equipment
+                </h1>
+                <p class="text-muted">Enter equipment details to add to the system</p>
+            </div>
+        </div>
+
+        <!-- Equipment Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Equipment Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/equipment/new">
+                            <div class="row">
+                                <!-- Basic Information -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Basic Information</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Equipment Name *</label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="equipment_id" class="form-label">Equipment ID *</label>
+                                        <input type="text" class="form-control" id="equipment_id" name="equipment_id" required>
+                                        <div class="form-text">Unique identifier for the equipment</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="category" class="form-label">Category *</label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="">Select Category</option>
+                                            <option value="machinery">Machinery</option>
+                                            <option value="electrical">Electrical</option>
+                                            <option value="plumbing">Plumbing</option>
+                                            <option value="hvac">HVAC</option>
+                                            <option value="vehicle">Vehicle</option>
+                                            <option value="computer">Computer</option>
+                                            <option value="furniture">Furniture</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="criticality" class="form-label">Criticality Level</label>
+                                        <select class="form-select" id="criticality" name="criticality">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="critical">Critical</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Technical Details -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Technical Details</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="manufacturer" class="form-label">Manufacturer</label>
+                                        <input type="text" class="form-control" id="manufacturer" name="manufacturer">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="model" class="form-label">Model</label>
+                                        <input type="text" class="form-control" id="model" name="model">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="serial_number" class="form-label">Serial Number</label>
+                                        <input type="text" class="form-control" id="serial_number" name="serial_number">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="location" class="form-label">Location</label>
+                                        <input type="text" class="form-control" id="location" name="location">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="department" class="form-label">Department</label>
+                                        <input type="text" class="form-control" id="department" name="department">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3">Description & Specifications</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief description of the equipment"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="specifications" class="form-label">Technical Specifications</label>
+                                        <textarea class="form-control" id="specifications" name="specifications" rows="4" placeholder="Technical specifications, operating parameters, etc."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <hr class="my-4">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="/equipment" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Equipment
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-generate equipment ID if not provided
+        document.getElementById('name').addEventListener('input', function() {
+            const name = this.value;
+            const equipmentIdField = document.getElementById('equipment_id');
+            
+            if (!equipmentIdField.value) {
+                // Generate a simple ID from the name
+                const id = name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 8);
+                if (id.length >= 3) {
+                    equipmentIdField.value = id + '-' + Date.now().toString().slice(-4);
+                }
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const name = document.getElementById('name').value.trim();
+            const equipmentId = document.getElementById('equipment_id').value.trim();
+            const category = document.getElementById('category').value;
+            
+            if (!name || !equipmentId || !category) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html> 

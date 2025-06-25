@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Work Order - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/work-orders">Work Orders</a></li>
+                        <li class="breadcrumb-item active">Create Work Order</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-plus text-primary me-2"></i>
+                    Create New Work Order
+                </h1>
+                <p class="text-muted">Create a new maintenance work order</p>
+            </div>
+        </div>
+
+        <!-- Work Order Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-list me-2"></i>Work Order Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/work-orders/new">
+                            <div class="row">
+                                <!-- Basic Information -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Basic Information</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="title" class="form-label">Work Order Title *</label>
+                                        <input type="text" class="form-control" id="title" name="title" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description *</label>
+                                        <textarea class="form-control" id="description" name="description" rows="4" required placeholder="Describe the maintenance work to be performed"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="equipment_id" class="form-label">Equipment *</label>
+                                        <select class="form-select" id="equipment_id" name="equipment_id" required>
+                                            <option value="">Select Equipment</option>
+                                            {% for eq in equipment %}
+                                            <option value="{{ eq.id }}">{{ eq.name }} ({{ eq.equipment_id }}) - {{ eq.location or 'No location' }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="type" class="form-label">Work Order Type</label>
+                                        <select class="form-select" id="type" name="type">
+                                            <option value="corrective" selected>Corrective</option>
+                                            <option value="preventive">Preventive</option>
+                                            <option value="emergency">Emergency</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Assignment & Scheduling -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Assignment & Scheduling</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="priority" class="form-label">Priority</label>
+                                        <select class="form-select" id="priority" name="priority">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="assigned_technician_id" class="form-label">Assign To</label>
+                                        <select class="form-select" id="assigned_technician_id" name="assigned_technician_id">
+                                            <option value="">Select Technician</option>
+                                            {% for tech in technicians %}
+                                            <option value="{{ tech.id }}">{{ tech.first_name }} {{ tech.last_name }} ({{ tech.department or 'No department' }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="scheduled_date" class="form-label">Scheduled Date & Time</label>
+                                        <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date">
+                                        <div class="form-text">Leave empty for immediate scheduling</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
+                                        <input type="number" class="form-control" id="estimated_duration" name="estimated_duration" min="15" step="15" placeholder="e.g., 120">
+                                        <div class="form-text">Estimated time to complete the work</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Equipment Information Display -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3">Equipment Information</h6>
+                                    <div id="equipmentInfo" class="alert alert-info" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Equipment:</strong> <span id="equipmentName"></span><br>
+                                                <strong>Location:</strong> <span id="equipmentLocation"></span><br>
+                                                <strong>Status:</strong> <span id="equipmentStatus"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Category:</strong> <span id="equipmentCategory"></span><br>
+                                                <strong>Criticality:</strong> <span id="equipmentCriticality"></span><br>
+                                                <strong>Department:</strong> <span id="equipmentDepartment"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <hr class="my-4">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="/work-orders" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Create Work Order
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Equipment data for display
+        const equipmentData = {
+            {% for eq in equipment %}
+            {{ eq.id }}: {
+                name: "{{ eq.name }}",
+                location: "{{ eq.location or 'No location' }}",
+                status: "{{ eq.status }}",
+                category: "{{ eq.category }}",
+                criticality: "{{ eq.criticality }}",
+                department: "{{ eq.department or 'No department' }}"
+            },
+            {% endfor %}
+        };
+        
+        // Show equipment information when selected
+        document.getElementById('equipment_id').addEventListener('change', function() {
+            const equipmentId = this.value;
+            const equipmentInfo = document.getElementById('equipmentInfo');
+            
+            if (equipmentId && equipmentData[equipmentId]) {
+                const eq = equipmentData[equipmentId];
+                document.getElementById('equipmentName').textContent = eq.name;
+                document.getElementById('equipmentLocation').textContent = eq.location;
+                document.getElementById('equipmentStatus').textContent = eq.status;
+                document.getElementById('equipmentCategory').textContent = eq.category;
+                document.getElementById('equipmentCriticality').textContent = eq.criticality;
+                document.getElementById('equipmentDepartment').textContent = eq.department;
+                equipmentInfo.style.display = 'block';
+            } else {
+                equipmentInfo.style.display = 'none';
+            }
+        });
+        
+        // Set default scheduled date to current date/time
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const defaultDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            document.getElementById('scheduled_date').value = defaultDateTime;
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const title = document.getElementById('title').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const equipmentId = document.getElementById('equipment_id').value;
+            
+            if (!title || !description || !equipmentId) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+                return false;
+            }
+            
+            // Validate estimated duration
+            const estimatedDuration = parseInt(document.getElementById('estimated_duration').value);
+            if (estimatedDuration && estimatedDuration < 15) {
+                e.preventDefault();
+                alert('Estimated duration must be at least 15 minutes.');
+                return false;
+            }
+        });
+        
+        // Priority-based scheduling suggestions
+        document.getElementById('priority').addEventListener('change', function() {
+            const priority = this.value;
+            const scheduledDate = document.getElementById('scheduled_date');
+            const now = new Date();
+            
+            if (priority === 'urgent') {
+                // For urgent work orders, suggest immediate scheduling
+                const urgentDateTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+                const year = urgentDateTime.getFullYear();
+                const month = String(urgentDateTime.getMonth() + 1).padStart(2, '0');
+                const day = String(urgentDateTime.getDate()).padStart(2, '0');
+                const hours = String(urgentDateTime.getHours()).padStart(2, '0');
+                const minutes = String(urgentDateTime.getMinutes()).padStart(2, '0');
+                
+                scheduledDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            } else if (priority === 'high') {
+                // For high priority, suggest within 2 hours
+                const highPriorityDateTime = new Date(now.getTime() + 2 * 60 * 60000); // 2 hours from now
+                const year = highPriorityDateTime.getFullYear();
+                const month = String(highPriorityDateTime.getMonth() + 1).padStart(2, '0');
+                const day = String(highPriorityDateTime.getDate()).padStart(2, '0');
+                const hours = String(highPriorityDateTime.getHours()).padStart(2, '0');
+                const minutes = String(highPriorityDateTime.getMinutes()).padStart(2, '0');
+                
+                scheduledDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-cogs text-primary me-2"></i>
+                        Equipment Management
+                    </h1>
+                    <p class="text-muted">Manage and track all equipment assets</p>
+                </div>
+                <a href="/equipment/new" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Equipment
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="statusFilter" class="form-label">Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="operational">Operational</option>
+                                    <option value="maintenance">Under Maintenance</option>
+                                    <option value="out_of_service">Out of Service</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="categoryFilter" class="form-label">Category</label>
+                                <select class="form-select" id="categoryFilter">
+                                    <option value="">All Categories</option>
+                                    <option value="machinery">Machinery</option>
+                                    <option value="electrical">Electrical</option>
+                                    <option value="plumbing">Plumbing</option>
+                                    <option value="hvac">HVAC</option>
+                                    <option value="vehicle">Vehicle</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="criticalityFilter" class="form-label">Criticality</label>
+                                <select class="form-select" id="criticalityFilter">
+                                    <option value="">All Criticality</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="searchInput" class="form-label">Search</label>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search equipment...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Equipment List
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if equipment %}
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="equipmentTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Equipment ID</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Location</th>
+                                            <th>Status</th>
+                                            <th>Criticality</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for eq in equipment %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ eq.equipment_id }}</strong>
+                                            </td>
+                                            <td>
+                                                <a href="/equipment/{{ eq.id }}" class="text-decoration-none">
+                                                    {{ eq.name }}
+                                                </a>
+                                                {% if eq.manufacturer and eq.model %}
+                                                    <br>
+                                                    <small class="text-muted">{{ eq.manufacturer }} {{ eq.model }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ eq.category }}</span>
+                                            </td>
+                                            <td>{{ eq.location or 'N/A' }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if eq.status == 'operational' else 'warning' if eq.status == 'maintenance' else 'danger' }}">
+                                                    {{ eq.status.replace('_', ' ').title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if eq.criticality == 'low' else 'info' if eq.criticality == 'medium' else 'warning' if eq.criticality == 'high' else 'danger' }}">
+                                                    {{ eq.criticality.title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/equipment/{{ eq.id }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="/work-orders/new?equipment_id={{ eq.id }}" class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-plus"></i> WO
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Delete Equipment" 
+                                                            onclick="confirmDelete({{ eq.id }}, '{{ eq.name }}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">No Equipment Found</h4>
+                                <p class="text-muted">Get started by adding your first piece of equipment.</p>
+                                <a href="/equipment/new" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Add Equipment
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete Equipment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="equipmentName"></strong>?</p>
+                    <p class="text-danger"><small>This action cannot be undone. All associated work orders and maintenance schedules will also be deleted.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Delete Equipment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusFilter = document.getElementById('statusFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const criticalityFilter = document.getElementById('criticalityFilter');
+            const searchInput = document.getElementById('searchInput');
+            const table = document.getElementById('equipmentTable');
+            
+            function filterTable() {
+                const status = statusFilter.value.toLowerCase();
+                const category = categoryFilter.value.toLowerCase();
+                const criticality = criticalityFilter.value.toLowerCase();
+                const search = searchInput.value.toLowerCase();
+                
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const statusCell = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+                    const categoryCell = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    const criticalityCell = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                    const nameCell = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    const idCell = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                    
+                    const matchesStatus = !status || statusCell.includes(status);
+                    const matchesCategory = !category || categoryCell.includes(category);
+                    const matchesCriticality = !criticality || criticalityCell.includes(criticality);
+                    const matchesSearch = !search || nameCell.includes(search) || idCell.includes(search);
+                    
+                    if (matchesStatus && matchesCategory && matchesCriticality && matchesSearch) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            statusFilter.addEventListener('change', filterTable);
+            categoryFilter.addEventListener('change', filterTable);
+            criticalityFilter.addEventListener('change', filterTable);
+            searchInput.addEventListener('input', filterTable);
+        });
+
+        // Delete confirmation function
+        function confirmDelete(equipmentId, equipmentName) {
+            document.getElementById('equipmentName').textContent = equipmentName;
+            document.getElementById('deleteForm').action = `/equipment/${equipmentId}/delete`;
+            
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        }
+    </script>
+</body>
+</html> 

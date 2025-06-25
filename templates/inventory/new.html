@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Inventory Item - CMMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-tools me-2"></i>Gamma Project
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/inventory">Inventory</a></li>
+                        <li class="breadcrumb-item active">Add Inventory Item</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-plus text-primary me-2"></i>
+                    Add New Inventory Item
+                </h1>
+                <p class="text-muted">Enter inventory item details to add to the system</p>
+            </div>
+        </div>
+
+        <!-- Inventory Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-box me-2"></i>Inventory Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/inventory/new">
+                            <div class="row">
+                                <!-- Basic Information -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Basic Information</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="part_number" class="form-label">Part Number *</label>
+                                        <input type="text" class="form-control" id="part_number" name="part_number" required>
+                                        <div class="form-text">Unique identifier for the part</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Item Name *</label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="category" class="form-label">Category</label>
+                                        <select class="form-select" id="category" name="category">
+                                            <option value="">Select Category</option>
+                                            <option value="Filters">Filters</option>
+                                            <option value="Belts">Belts</option>
+                                            <option value="Bearings">Bearings</option>
+                                            <option value="Motors">Motors</option>
+                                            <option value="Electrical">Electrical</option>
+                                            <option value="Lubricants">Lubricants</option>
+                                            <option value="Tools">Tools</option>
+                                            <option value="Fasteners">Fasteners</option>
+                                            <option value="Pipes">Pipes</option>
+                                            <option value="Valves">Valves</option>
+                                            <option value="Sensors">Sensors</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief description of the item"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <!-- Supplier Information -->
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Supplier Information</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="manufacturer" class="form-label">Manufacturer</label>
+                                        <input type="text" class="form-control" id="manufacturer" name="manufacturer">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="supplier" class="form-label">Supplier</label>
+                                        <input type="text" class="form-control" id="supplier" name="supplier">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="unit_cost" class="form-label">Unit Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="unit_cost" name="unit_cost" step="0.01" min="0">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="unit_of_measure" class="form-label">Unit of Measure</label>
+                                        <select class="form-select" id="unit_of_measure" name="unit_of_measure">
+                                            <option value="pieces" selected>Pieces</option>
+                                            <option value="boxes">Boxes</option>
+                                            <option value="pairs">Pairs</option>
+                                            <option value="sets">Sets</option>
+                                            <option value="meters">Meters</option>
+                                            <option value="feet">Feet</option>
+                                            <option value="liters">Liters</option>
+                                            <option value="gallons">Gallons</option>
+                                            <option value="kilograms">Kilograms</option>
+                                            <option value="pounds">Pounds</option>
+                                            <option value="rolls">Rolls</option>
+                                            <option value="sheets">Sheets</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Stock Management -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3">Stock Management</h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="current_stock" class="form-label">Current Stock</label>
+                                                <input type="number" class="form-control" id="current_stock" name="current_stock" value="0" min="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="minimum_stock" class="form-label">Minimum Stock</label>
+                                                <input type="number" class="form-control" id="minimum_stock" name="minimum_stock" value="0" min="0">
+                                                <div class="form-text">Reorder point</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="maximum_stock" class="form-label">Maximum Stock</label>
+                                                <input type="number" class="form-control" id="maximum_stock" name="maximum_stock" min="0">
+                                                <div class="form-text">Optional - for space planning</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="location" class="form-label">Storage Location</label>
+                                        <input type="text" class="form-control" id="location" name="location" placeholder="e.g., Warehouse A - Shelf 1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <hr class="my-4">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="/inventory" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Inventory Item
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-generate part number if not provided
+        document.getElementById('name').addEventListener('input', function() {
+            const name = this.value;
+            const partNumberField = document.getElementById('part_number');
+            
+            if (!partNumberField.value) {
+                // Generate a simple part number from the name
+                const partNumber = name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 8);
+                if (partNumber.length >= 3) {
+                    partNumberField.value = partNumber + '-' + Date.now().toString().slice(-4);
+                }
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const partNumber = document.getElementById('part_number').value.trim();
+            const name = document.getElementById('name').value.trim();
+            
+            if (!partNumber || !name) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+                return false;
+            }
+            
+            // Validate stock levels
+            const currentStock = parseInt(document.getElementById('current_stock').value) || 0;
+            const minStock = parseInt(document.getElementById('minimum_stock').value) || 0;
+            const maxStock = parseInt(document.getElementById('maximum_stock').value) || 0;
+            
+            if (maxStock > 0 && currentStock > maxStock) {
+                e.preventDefault();
+                alert('Current stock cannot be greater than maximum stock.');
+                return false;
+            }
+            
+            if (maxStock > 0 && minStock > maxStock) {
+                e.preventDefault();
+                alert('Minimum stock cannot be greater than maximum stock.');
+                return false;
+            }
+        });
+        
+        // Stock level validation
+        document.getElementById('minimum_stock').addEventListener('input', function() {
+            const minStock = parseInt(this.value) || 0;
+            const maxStock = parseInt(document.getElementById('maximum_stock').value) || 0;
+            
+            if (maxStock > 0 && minStock > maxStock) {
+                this.setCustomValidity('Minimum stock cannot be greater than maximum stock');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+        
+        document.getElementById('maximum_stock').addEventListener('input', function() {
+            const maxStock = parseInt(this.value) || 0;
+            const minStock = parseInt(document.getElementById('minimum_stock').value) || 0;
+            const currentStock = parseInt(document.getElementById('current_stock').value) || 0;
+            
+            if (maxStock > 0 && minStock > maxStock) {
+                this.setCustomValidity('Maximum stock cannot be less than minimum stock');
+            } else if (maxStock > 0 && currentStock > maxStock) {
+                this.setCustomValidity('Maximum stock cannot be less than current stock');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html> 
