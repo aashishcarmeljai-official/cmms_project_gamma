@@ -1,0 +1,36 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container mt-5" style="max-width: 400px;">
+    <div class="card shadow">
+        <div class="card-body">
+            <h3 class="card-title text-center mb-4">Login</h3>
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", placeholder="Enter your email") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control", placeholder="Enter your password") }}
+                </div>
+                <div class="d-grid mb-3">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+            <div class="text-center mb-3">
+                <span>or</span>
+            </div>
+            <div class="d-grid mb-3">
+                <a href="{{ url_for('login_google') }}" class="btn btn-danger">
+                    <i class="fab fa-google me-2"></i> Login with Google
+                </a>
+            </div>
+            <div class="text-center">
+                <span>Don't have an account?</span>
+                <a href="{{ url_for('signup') }}">Sign up</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

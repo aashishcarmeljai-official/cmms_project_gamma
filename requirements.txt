@@ -14,3 +14,7 @@ python-dotenv==1.0.0
 SQLAlchemy==2.0.41
 typing_extensions==4.14.0
 Werkzeug==2.3.7
+flask-login
+flask-dance
+flask-wtf
+email_validator

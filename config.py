@@ -5,8 +5,10 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://cmms_db_bszs_user:jplEjrfzMEwPZZ9oQHgGWW7LjMOLJobM@dpg-d1dnb295pdvs73ao4il0-a.oregon-postgres.render.com/cmms_db_bszs')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', 'your-google-client-id')
+    GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', 'your-google-client-secret')
 
 class DevelopmentConfig(Config):
     DEBUG = True

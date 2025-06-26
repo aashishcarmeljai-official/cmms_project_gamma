@@ -1,10 +1,11 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 # We'll import db from a separate file to avoid circular imports
 from extensions import db
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -19,6 +20,7 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    google_id = db.Column(db.String(255), unique=True, nullable=True)  # For Google OAuth
     
     # Relationships - specify foreign_keys to avoid ambiguity
     assigned_work_orders = db.relationship('WorkOrder', 

@@ -1,0 +1,211 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Profile</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-user text-primary me-2"></i>
+                User Profile
+            </h1>
+            <p class="text-muted">Manage your account information and settings</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>Profile Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Username</label>
+                                <p class="form-control-plaintext">{{ user.username }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Email</label>
+                                <p class="form-control-plaintext">{{ user.email }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Full Name</label>
+                                <p class="form-control-plaintext">{{ user.first_name }} {{ user.last_name }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Role</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'primary' if user.role == 'manager' else 'secondary' }}">
+                                        {{ user.role.title() }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Department</label>
+                                <p class="form-control-plaintext">{{ user.department or 'Not specified' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Phone</label>
+                                <p class="form-control-plaintext">{{ user.phone or 'Not specified' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Account Status</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                        {{ 'Active' if user.is_active else 'Inactive' }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Member Since</label>
+                                <p class="form-control-plaintext">{{ user.created_at.strftime('%B %d, %Y') }}</p>
+                            </div>
+                            {% if user.google_id %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Account Type</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-info">
+                                        <i class="fab fa-google me-1"></i>Google Account
+                                    </span>
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Account Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('profile_edit') }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Profile
+                        </a>
+                        <a href="{{ url_for('change_password') }}" class="btn btn-warning">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </a>
+                        <a href="{{ url_for('delete_account') }}" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Statistics -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Account Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ user.assigned_work_orders|length }}</h4>
+                                <small class="text-muted">Assigned Work Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ user.created_work_orders|length }}</h4>
+                            <small class="text-muted">Created Work Orders</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.assigned_work_orders or user.created_work_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Activity</th>
+                                        <th>Work Order</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for wo in user.assigned_work_orders[:5] %}
+                                    <tr>
+                                        <td>{{ wo.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>Assigned to work order</td>
+                                        <td>
+                                            <a href="{{ url_for('work_order_detail', id=wo.id) }}" class="text-decoration-none">
+                                                {{ wo.work_order_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if wo.status == 'completed' else 'warning' if wo.status == 'in_progress' else 'secondary' }}">
+                                                {{ wo.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% for wo in user.created_work_orders[:5] %}
+                                    <tr>
+                                        <td>{{ wo.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>Created work order</td>
+                                        <td>
+                                            <a href="{{ url_for('work_order_detail', id=wo.id) }}" class="text-decoration-none">
+                                                {{ wo.work_order_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if wo.status == 'completed' else 'warning' if wo.status == 'in_progress' else 'secondary' }}">
+                                                {{ wo.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No recent activity found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
