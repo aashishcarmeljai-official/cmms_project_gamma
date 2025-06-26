@@ -1,0 +1,204 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('locations_list') }}">Locations</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('location_detail', id=location.id) }}">{{ location.name }}</a></li>
+                    <li class="breadcrumb-item active">Edit Location</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit text-primary me-2"></i>
+                Edit Location: {{ location.name }}
+            </h1>
+            <p class="text-muted">Update location information and coordinates</p>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Location Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.address.label(class="form-label") }}
+                                    {{ form.address(class="form-control" + (" is-invalid" if form.address.errors else ""), rows=2) }}
+                                    {% if form.address.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.address.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.city.label(class="form-label") }}
+                                    {{ form.city(class="form-control" + (" is-invalid" if form.city.errors else "")) }}
+                                    {% if form.city.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.city.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.state.label(class="form-label") }}
+                                    {{ form.state(class="form-control" + (" is-invalid" if form.state.errors else "")) }}
+                                    {% if form.state.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.state.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.zip_code.label(class="form-label") }}
+                                    {{ form.zip_code(class="form-control" + (" is-invalid" if form.zip_code.errors else "")) }}
+                                    {% if form.zip_code.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.zip_code.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.country.label(class="form-label") }}
+                                    {{ form.country(class="form-control" + (" is-invalid" if form.country.errors else "")) }}
+                                    {% if form.country.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.country.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.description.label(class="form-label") }}
+                                    {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=3) }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.contact_person.label(class="form-label") }}
+                                    {{ form.contact_person(class="form-control" + (" is-invalid" if form.contact_person.errors else "")) }}
+                                    {% if form.contact_person.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.contact_person.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.contact_phone.label(class="form-label") }}
+                                    {{ form.contact_phone(class="form-control" + (" is-invalid" if form.contact_phone.errors else "")) }}
+                                    {% if form.contact_phone.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.contact_phone.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.contact_email.label(class="form-label") }}
+                                    {{ form.contact_email(class="form-control" + (" is-invalid" if form.contact_email.errors else "")) }}
+                                    {% if form.contact_email.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.contact_email.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Map Coordinates Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-map me-2"></i>Map Coordinates (Optional)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted small mb-3">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Add latitude and longitude coordinates to display this location on the interactive map. 
+                                            You can find coordinates using online tools like Google Maps or GPS devices.
+                                        </p>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    {{ form.latitude.label(class="form-label") }}
+                                                    {{ form.latitude(class="form-control" + (" is-invalid" if form.latitude.errors else ""), placeholder="e.g., 40.7128") }}
+                                                    {% if form.latitude.errors %}
+                                                        <div class="invalid-feedback">
+                                                            {% for error in form.latitude.errors %}{{ error }}{% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="form-text">Latitude (decimal degrees, e.g., 40.7128 for New York)</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    {{ form.longitude.label(class="form-label") }}
+                                                    {{ form.longitude(class="form-control" + (" is-invalid" if form.longitude.errors else ""), placeholder="e.g., -74.0060") }}
+                                                    {% if form.longitude.errors %}
+                                                        <div class="invalid-feedback">
+                                                            {% for error in form.longitude.errors %}{{ error }}{% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="form-text">Longitude (decimal degrees, e.g., -74.0060 for New York)</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% if location.latitude and location.longitude %}
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            This location is currently mapped at coordinates: 
+                                            <strong>{{ "%.4f"|format(location.latitude) }}, {{ "%.4f"|format(location.longitude) }}</strong>
+                                        </div>
+                                        {% else %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            No coordinates set. This location will not appear on the interactive map.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('location_detail', id=location.id) }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                                    </a>
+                                    {{ form.submit(class="btn btn-primary") }}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

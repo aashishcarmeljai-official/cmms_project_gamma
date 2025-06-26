@@ -1,254 +1,169 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Work Orders - CMMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-tools me-2"></i>Gamma Project
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
-                    </li>
-                </ul>
-            </div>
+{% extends 'base.html' %}
+{% block title %}Work Orders - CMMS{% endblock %}
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                Work Order Management
+            </h1>
+            <p class="text-muted">Create, assign, and track maintenance work orders</p>
         </div>
-    </nav>
-
-    <main class="container-fluid mt-4">
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-12 d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-clipboard-list text-primary me-2"></i>
-                        Work Order Management
-                    </h1>
-                    <p class="text-muted">Create, assign, and track maintenance work orders</p>
-                </div>
-                <a href="/work-orders/new" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Work Order
-                </a>
-            </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label for="statusFilter" class="form-label">Status</label>
-                                <select class="form-select" id="statusFilter">
-                                    <option value="">All Status</option>
-                                    <option value="open">Open</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="priorityFilter" class="form-label">Priority</label>
-                                <select class="form-select" id="priorityFilter">
-                                    <option value="">All Priorities</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="typeFilter" class="form-label">Type</label>
-                                <select class="form-select" id="typeFilter">
-                                    <option value="">All Types</option>
-                                    <option value="corrective">Corrective</option>
-                                    <option value="preventive">Preventive</option>
-                                    <option value="emergency">Emergency</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="searchInput" class="form-label">Search</label>
-                                <input type="text" class="form-control" id="searchInput" placeholder="Search work orders...">
-                            </div>
-                        </div>
+        <a href="/work-orders/new" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Work Order
+        </a>
+    </div>
+</div>
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="form-label">Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="priorityFilter" class="form-label">Priority</label>
+                        <select class="form-select" id="priorityFilter">
+                            <option value="">All Priorities</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="typeFilter" class="form-label">Type</label>
+                        <select class="form-select" id="typeFilter">
+                            <option value="">All Types</option>
+                            <option value="corrective">Corrective</option>
+                            <option value="preventive">Preventive</option>
+                            <option value="emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="searchInput" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search work orders...">
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Work Orders List -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-list me-2"></i>Work Orders List
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        {% if work_orders %}
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="workOrdersTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Work Order #</th>
-                                            <th>Title</th>
-                                            <th>Equipment</th>
-                                            <th>Assigned To</th>
-                                            <th>Priority</th>
-                                            <th>Status</th>
-                                            <th>Type</th>
-                                            <th>Scheduled</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for wo in work_orders %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ wo.work_order_number }}</strong>
-                                            </td>
-                                            <td>
-                                                <a href="/work-orders/{{ wo.id }}" class="text-decoration-none">
-                                                    {{ wo.title }}
+    </div>
+</div>
+<!-- Work Orders List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Work Orders List
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if work_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="workOrdersTable">
+                            <thead>
+                                <tr>
+                                    <th>Work Order #</th>
+                                    <th>Title</th>
+                                    <th>Equipment</th>
+                                    <th>Assigned To</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Type</th>
+                                    <th>Scheduled</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for wo in work_orders %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ wo.work_order_number }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="/work-orders/{{ wo.id }}" class="text-decoration-none">
+                                            {{ wo.title }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ wo.description[:50] }}{% if wo.description|length > 50 %}...{% endif %}</small>
+                                    </td>
+                                    <td>{{ wo.equipment.name if wo.equipment else 'N/A' }}</td>
+                                    <td>
+                                        {% if wo.assigned_technician %}
+                                            {{ wo.assigned_technician.first_name }} {{ wo.assigned_technician.last_name }}
+                                        {% else %}
+                                            <span class="text-muted">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if wo.priority == 'urgent' else 'warning' if wo.priority == 'high' else 'info' if wo.priority == 'medium' else 'secondary' }}">
+                                            {{ wo.priority.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if wo.status == 'completed' else 'warning' if wo.status == 'in_progress' else 'danger' if wo.status == 'cancelled' else 'secondary' }}">
+                                            {{ wo.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if wo.type == 'preventive' else 'warning' if wo.type == 'corrective' else 'danger' }}">
+                                            {{ wo.type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if wo.scheduled_date %}
+                                            {{ wo.scheduled_date.strftime('%Y-%m-%d') }}
+                                            <br>
+                                            <small class="text-muted">{{ wo.scheduled_date.strftime('%H:%M') }}</small>
+                                        {% else %}
+                                            <span class="text-muted">Not scheduled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/work-orders/{{ wo.id }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if wo.status == 'open' %}
+                                                <a href="/work-orders/{{ wo.id }}/update-status" class="btn btn-sm btn-outline-success" title="Start Work" onclick="return confirm('Start this work order?')">
+                                                    <i class="fas fa-play"></i>
                                                 </a>
-                                                <br>
-                                                <small class="text-muted">{{ wo.description[:50] }}{% if wo.description|length > 50 %}...{% endif %}</small>
-                                            </td>
-                                            <td>{{ wo.equipment.name if wo.equipment else 'N/A' }}</td>
-                                            <td>
-                                                {% if wo.assigned_technician %}
-                                                    {{ wo.assigned_technician.first_name }} {{ wo.assigned_technician.last_name }}
-                                                {% else %}
-                                                    <span class="text-muted">Unassigned</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ 'danger' if wo.priority == 'urgent' else 'warning' if wo.priority == 'high' else 'info' if wo.priority == 'medium' else 'secondary' }}">
-                                                    {{ wo.priority.title() }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ 'success' if wo.status == 'completed' else 'warning' if wo.status == 'in_progress' else 'danger' if wo.status == 'cancelled' else 'secondary' }}">
-                                                    {{ wo.status.replace('_', ' ').title() }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ 'primary' if wo.type == 'preventive' else 'warning' if wo.type == 'corrective' else 'danger' }}">
-                                                    {{ wo.type.title() }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                {% if wo.scheduled_date %}
-                                                    {{ wo.scheduled_date.strftime('%Y-%m-%d') }}
-                                                    <br>
-                                                    <small class="text-muted">{{ wo.scheduled_date.strftime('%H:%M') }}</small>
-                                                {% else %}
-                                                    <span class="text-muted">Not scheduled</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="/work-orders/{{ wo.id }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    {% if wo.status == 'open' %}
-                                                        <a href="/work-orders/{{ wo.id }}/update-status" class="btn btn-sm btn-outline-success" title="Start Work" onclick="return confirm('Start this work order?')">
-                                                            <i class="fas fa-play"></i>
-                                                        </a>
-                                                    {% elif wo.status == 'in_progress' %}
-                                                        <a href="/work-orders/{{ wo.id }}/update-status" class="btn btn-sm btn-outline-success" title="Complete Work" onclick="return confirm('Mark this work order as completed?')">
-                                                            <i class="fas fa-check"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
-                                <h4 class="text-muted">No Work Orders Found</h4>
-                                <p class="text-muted">Get started by creating your first work order.</p>
-                                <a href="/work-orders/new" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Create Work Order
-                                </a>
-                            </div>
-                        {% endif %}
+                                            {% elif wo.status == 'in_progress' %}
+                                                <a href="/work-orders/{{ wo.id }}/update-status" class="btn btn-sm btn-outline-success" title="Complete Work" onclick="return confirm('Mark this work order as completed?')">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Work Orders Found</h4>
+                        <p class="text-muted">Get started by creating your first work order.</p>
+                        <a href="/work-orders/new" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Work Order
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Filter functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const statusFilter = document.getElementById('statusFilter');
-            const priorityFilter = document.getElementById('priorityFilter');
-            const typeFilter = document.getElementById('typeFilter');
-            const searchInput = document.getElementById('searchInput');
-            const table = document.getElementById('workOrdersTable');
-            
-            function filterTable() {
-                const status = statusFilter.value.toLowerCase();
-                const priority = priorityFilter.value.toLowerCase();
-                const type = typeFilter.value.toLowerCase();
-                const search = searchInput.value.toLowerCase();
-                
-                const rows = table.querySelectorAll('tbody tr');
-                
-                rows.forEach(row => {
-                    const statusCell = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
-                    const priorityCell = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-                    const typeCell = row.querySelector('td:nth-child(7)').textContent.toLowerCase();
-                    const titleCell = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                    const woNumberCell = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-                    
-                    const matchesStatus = !status || statusCell.includes(status);
-                    const matchesPriority = !priority || priorityCell.includes(priority);
-                    const matchesType = !type || typeCell.includes(type);
-                    const matchesSearch = !search || titleCell.includes(search) || woNumberCell.includes(search);
-                    
-                    if (matchesStatus && matchesPriority && matchesType && matchesSearch) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            }
-            
-            statusFilter.addEventListener('change', filterTable);
-            priorityFilter.addEventListener('change', filterTable);
-            typeFilter.addEventListener('change', filterTable);
-            searchInput.addEventListener('input', filterTable);
-        });
-    </script>
-</body>
-</html> 
+    </div>
+</div>
+{% endblock %} 

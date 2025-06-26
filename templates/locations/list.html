@@ -1,0 +1,334 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                    Locations Management
+                </h1>
+                <p class="text-muted">Manage and track all facility locations</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/maps" class="btn btn-outline-primary">
+                    <i class="fas fa-map me-2"></i>View Map
+                </a>
+                <a href="/locations/new" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Location
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Locations List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Locations List
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <!-- Search Bar -->
+                            <div class="input-group" style="width: 300px;">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search by name, city, state, or contact..." aria-label="Search locations">
+                                <button class="btn btn-outline-light" type="button" id="searchBtn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-outline-light" type="button" id="clearSearchBtn" title="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <!-- Filter Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-filter me-1"></i>Filter
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+                                    <li><a class="dropdown-item" href="#" data-filter="all">All Locations</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="active">Active Only</a></li>
+                                    <li><a class="dropdown-item" href="#" data-filter="inactive">Inactive Only</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Search Results Info -->
+                    <div id="searchInfo" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="searchResultsText"></span>
+                        <button type="button" class="btn-close float-end" onclick="clearSearch()"></button>
+                    </div>
+                    
+                    {% if locations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="locationsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Location Name</th>
+                                        <th>Address</th>
+                                        <th>Contact</th>
+                                        <th>Equipment</th>
+                                        <th>Users</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="locationsTableBody">
+                                    {% for location in locations %}
+                                    <tr class="location-row" 
+                                        data-name="{{ location.name|lower }}" 
+                                        data-city="{{ (location.city or '')|lower }}" 
+                                        data-state="{{ (location.state or '')|lower }}"
+                                        data-contact="{{ (location.contact_person or '')|lower }}"
+                                        data-status="{% if location.is_active %}active{% else %}inactive{% endif %}">
+                                        <td>
+                                            <a href="/locations/{{ location.id }}" class="text-decoration-none fw-bold">
+                                                {{ location.name }}
+                                            </a>
+                                            {% if location.description %}
+                                                <br>
+                                                <small class="text-muted">{{ location.description[:50] }}{% if location.description|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if location.address %}
+                                                {{ location.address }}
+                                                {% if location.city or location.state %}
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ location.city }}{% if location.city and location.state %}, {% endif %}{{ location.state }}
+                                                        {% if location.zip_code %} {{ location.zip_code }}{% endif %}
+                                                    </small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No address</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if location.contact_person %}
+                                                <strong>{{ location.contact_person }}</strong>
+                                                {% if location.contact_phone %}
+                                                    <br>
+                                                    <small class="text-muted">{{ location.contact_phone }}</small>
+                                                {% endif %}
+                                                {% if location.contact_email %}
+                                                    <br>
+                                                    <small class="text-muted">{{ location.contact_email }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No contact</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ location.equipment|length }}</span>
+                                            <small class="text-muted">equipment</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ location.users|length }}</span>
+                                            <small class="text-muted">users</small>
+                                        </td>
+                                        <td>
+                                            {% if location.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/locations/{{ location.id }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="/locations/{{ location.id }}/edit" class="btn btn-sm btn-outline-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" 
+                                                        onclick="confirmDelete({{ location.id }}, '{{ location.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-map-marker-alt fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Locations Found</h4>
+                            <p class="text-muted">Get started by adding your first location.</p>
+                            <a href="/locations/new" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Add Location
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="locationName"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone. Make sure no equipment or users are assigned to this location.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Search and filter functionality
+    let currentSearchTerm = '';
+    let currentFilter = 'all';
+    
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function() {
+        currentSearchTerm = this.value.toLowerCase();
+        filterLocations();
+    });
+    
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        currentSearchTerm = searchTerm;
+        filterLocations();
+    });
+    
+    document.getElementById('clearSearchBtn').addEventListener('click', function() {
+        clearSearch();
+    });
+    
+    // Filter functionality
+    document.querySelectorAll('[data-filter]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentFilter = this.getAttribute('data-filter');
+            filterLocations();
+            
+            // Update filter button text
+            const filterBtn = document.getElementById('filterDropdown');
+            filterBtn.innerHTML = `<i class="fas fa-filter me-1"></i>${this.textContent}`;
+        });
+    });
+    
+    // Main filter function
+    function filterLocations() {
+        const rows = document.querySelectorAll('.location-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const city = row.getAttribute('data-city');
+            const state = row.getAttribute('data-state');
+            const contact = row.getAttribute('data-contact');
+            const status = row.getAttribute('data-status');
+            
+            // Check search term
+            const matchesSearch = !currentSearchTerm || 
+                name.includes(currentSearchTerm) ||
+                city.includes(currentSearchTerm) ||
+                state.includes(currentSearchTerm) ||
+                contact.includes(currentSearchTerm);
+            
+            // Check filter
+            let matchesFilter = true;
+            if (currentFilter === 'active') {
+                matchesFilter = status === 'active';
+            } else if (currentFilter === 'inactive') {
+                matchesFilter = status === 'inactive';
+            }
+            
+            // Show/hide row
+            if (matchesSearch && matchesFilter) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update search info
+        updateSearchInfo(visibleCount, rows.length);
+    }
+    
+    // Update search results info
+    function updateSearchInfo(visibleCount, totalCount) {
+        const searchInfo = document.getElementById('searchInfo');
+        const searchResultsText = document.getElementById('searchResultsText');
+        
+        if (currentSearchTerm || currentFilter !== 'all') {
+            let message = '';
+            if (currentSearchTerm && currentFilter !== 'all') {
+                message = `Showing ${visibleCount} of ${totalCount} locations matching "${currentSearchTerm}" and filter "${currentFilter}"`;
+            } else if (currentSearchTerm) {
+                message = `Showing ${visibleCount} of ${totalCount} locations matching "${currentSearchTerm}"`;
+            } else if (currentFilter !== 'all') {
+                message = `Showing ${visibleCount} of ${totalCount} locations with filter "${currentFilter}"`;
+            }
+            searchResultsText.textContent = message;
+            searchInfo.style.display = 'block';
+        } else {
+            searchInfo.style.display = 'none';
+        }
+    }
+    
+    // Clear search function
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        currentSearchTerm = '';
+        currentFilter = 'all';
+        
+        // Reset filter button
+        const filterBtn = document.getElementById('filterDropdown');
+        filterBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Filter';
+        
+        // Show all rows
+        document.querySelectorAll('.location-row').forEach(row => {
+            row.style.display = '';
+        });
+        
+        // Hide search info
+        document.getElementById('searchInfo').style.display = 'none';
+    }
+    
+    // Delete confirmation function
+    function confirmDelete(locationId, locationName) {
+        document.getElementById('locationName').textContent = locationName;
+        document.getElementById('deleteForm').action = `/locations/${locationId}/delete`;
+        
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    }
+    
+    // Initialize search on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up enter key for search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('searchBtn').click();
+            }
+        });
+    });
+</script>
+{% endblock %} 

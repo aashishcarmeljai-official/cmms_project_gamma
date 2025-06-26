@@ -1,362 +1,319 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory - CMMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-tools me-2"></i>Gamma Project
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
-                    </li>
-                </ul>
-            </div>
+{% extends 'base.html' %}
+{% block title %}Inventory - CMMS{% endblock %}
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-boxes text-primary me-2"></i>
+                Inventory Management
+            </h1>
+            <p class="text-muted">Manage and track all inventory items</p>
         </div>
-    </nav>
-
-    <main class="container-fluid mt-4">
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-12 d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-boxes text-primary me-2"></i>
-                        Inventory Management
-                    </h1>
-                    <p class="text-muted">Manage and track all inventory items</p>
-                </div>
-                <a href="/inventory/new" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add Inventory Item
-                </a>
-            </div>
-        </div>
-
-        <!-- Inventory List -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-list me-2"></i>Inventory List
-                            </h5>
-                            <div class="d-flex gap-2">
-                                <!-- Search Bar -->
-                                <div class="input-group" style="width: 300px;">
-                                    <input type="text" class="form-control" id="searchInput" placeholder="Search by part number, name, category, or location..." aria-label="Search inventory">
-                                    <button class="btn btn-outline-light" type="button" id="searchBtn">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                    <button class="btn btn-outline-light" type="button" id="clearSearchBtn" title="Clear search">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                <!-- Filter Dropdown -->
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-filter me-1"></i>Filter
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="filterDropdown">
-                                        <li><a class="dropdown-item" href="#" data-filter="all">All Items</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="low-stock">Low Stock</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="high-stock">High Stock</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="active">Active Only</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="inactive">Inactive Only</a></li>
-                                    </ul>
-                                </div>
-                            </div>
+        <a href="/inventory/new" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Inventory Item
+        </a>
+    </div>
+</div>
+<!-- Inventory List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Inventory List
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <!-- Search Bar -->
+                        <div class="input-group" style="width: 300px;">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search by part number, name, category, or location..." aria-label="Search inventory">
+                            <button class="btn btn-outline-light" type="button" id="searchBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button class="btn btn-outline-light" type="button" id="clearSearchBtn" title="Clear search">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <!-- Filter Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-filter me-1"></i>Filter
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+                                <li><a class="dropdown-item" href="#" data-filter="all">All Items</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="low-stock">Low Stock</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="high-stock">High Stock</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="active">Active Only</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="inactive">Inactive Only</a></li>
+                            </ul>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- Search Results Info -->
-                        <div id="searchInfo" class="alert alert-info" style="display: none;">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <span id="searchResultsText"></span>
-                            <button type="button" class="btn-close float-end" onclick="clearSearch()"></button>
-                        </div>
-                        
-                        {% if inventory %}
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="inventoryTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Part Number</th>
-                                            <th>Name</th>
-                                            <th>Category</th>
-                                            <th>Current Stock</th>
-                                            <th>Unit Cost</th>
-                                            <th>Location</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="inventoryTableBody">
-                                        {% for item in inventory %}
-                                        <tr class="inventory-row" 
-                                            data-part-number="{{ item.part_number|lower }}" 
-                                            data-name="{{ item.name|lower }}" 
-                                            data-category="{{ (item.category or '')|lower }}" 
-                                            data-location="{{ (item.location or '')|lower }}"
-                                            data-stock-status="{% if item.current_stock <= item.minimum_stock %}low-stock{% elif item.maximum_stock and item.current_stock >= item.maximum_stock %}high-stock{% else %}normal{% endif %}"
-                                            data-active-status="{% if item.is_active %}active{% else %}inactive{% endif %}">
-                                            <td>
-                                                <strong>{{ item.part_number }}</strong>
-                                            </td>
-                                            <td>
-                                                <a href="/inventory/{{ item.id }}" class="text-decoration-none">
-                                                    {{ item.name }}
-                                                </a>
-                                                {% if item.description %}
-                                                    <br>
-                                                    <small class="text-muted">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">{{ item.category or 'N/A' }}</span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <span class="me-2">{{ item.current_stock }} {{ item.unit_of_measure }}</span>
-                                                    {% if item.current_stock <= item.minimum_stock %}
-                                                        <span class="badge bg-danger">Low Stock</span>
-                                                    {% elif item.maximum_stock and item.current_stock >= item.maximum_stock %}
-                                                        <span class="badge bg-warning">High Stock</span>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {% if item.unit_cost %}
-                                                    ${{ "%.2f"|format(item.unit_cost) }}
-                                                {% else %}
-                                                    <span class="text-muted">N/A</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ item.location or 'N/A' }}</td>
-                                            <td>
-                                                {% if item.is_active %}
-                                                    <span class="badge bg-success">Active</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">Inactive</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="/inventory/{{ item.id }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a href="/inventory/{{ item.id }}/edit" class="btn btn-sm btn-outline-warning" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" 
-                                                            onclick="confirmDelete({{ item.id }}, '{{ item.name }}')">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-boxes fa-4x text-muted mb-3"></i>
-                                <h4 class="text-muted">No Inventory Items Found</h4>
-                                <p class="text-muted">Get started by adding your first inventory item.</p>
-                                <a href="/inventory/new" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Add Inventory Item
-                                </a>
-                            </div>
-                        {% endif %}
-                    </div>
                 </div>
             </div>
-        </div>
-    </main>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="card-body">
+                <!-- Search Results Info -->
+                <div id="searchInfo" class="alert alert-info" style="display: none;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="searchResultsText"></span>
+                    <button type="button" class="btn-close float-end" onclick="clearSearch()"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete <strong id="itemName"></strong>?</p>
-                    <p class="text-danger"><small>This action cannot be undone. All associated work order parts will also be deleted.</small></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="deleteForm" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
-                </div>
+                {% if inventory %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Part Number</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Current Stock</th>
+                                    <th>Unit Cost</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                {% for item in inventory %}
+                                <tr class="inventory-row" 
+                                    data-part-number="{{ item.part_number|lower }}" 
+                                    data-name="{{ item.name|lower }}" 
+                                    data-category="{{ (item.category or '')|lower }}" 
+                                    data-location="{{ (item.location or '')|lower }}"
+                                    data-stock-status="{% if item.current_stock <= item.minimum_stock %}low-stock{% elif item.maximum_stock and item.current_stock >= item.maximum_stock %}high-stock{% else %}normal{% endif %}"
+                                    data-active-status="{% if item.is_active %}active{% else %}inactive{% endif %}">
+                                    <td>
+                                        <strong>{{ item.part_number }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="/inventory/{{ item.id }}" class="text-decoration-none">
+                                            {{ item.name }}
+                                        </a>
+                                        {% if item.description %}
+                                            <br>
+                                            <small class="text-muted">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ item.category or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.current_stock }} {{ item.unit_of_measure }}</span>
+                                            {% if item.current_stock <= item.minimum_stock %}
+                                                <span class="badge bg-danger">Low Stock</span>
+                                            {% elif item.maximum_stock and item.current_stock >= item.maximum_stock %}
+                                                <span class="badge bg-warning">High Stock</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if item.unit_cost %}
+                                            ${{ "%.2f"|format(item.unit_cost) }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.location or 'N/A' }}</td>
+                                    <td>
+                                        {% if item.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/inventory/{{ item.id }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/inventory/{{ item.id }}/edit" class="btn btn-sm btn-outline-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" 
+                                                    onclick="confirmDelete({{ item.id }}, '{{ item.name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-boxes fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Inventory Items Found</h4>
+                        <p class="text-muted">Get started by adding your first inventory item.</p>
+                        <a href="/inventory/new" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Inventory Item
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Search and filter functionality
-        let currentSearchTerm = '';
-        let currentFilter = 'all';
-        
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function() {
-            currentSearchTerm = this.value.toLowerCase();
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="itemName"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone. All associated work order parts will also be deleted.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Search and filter functionality
+    let currentSearchTerm = '';
+    let currentFilter = 'all';
+    
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function() {
+        currentSearchTerm = this.value.toLowerCase();
+        filterInventory();
+    });
+    
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        currentSearchTerm = searchTerm;
+        filterInventory();
+    });
+    
+    document.getElementById('clearSearchBtn').addEventListener('click', function() {
+        clearSearch();
+    });
+    
+    // Filter functionality
+    document.querySelectorAll('[data-filter]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentFilter = this.getAttribute('data-filter');
             filterInventory();
-        });
-        
-        document.getElementById('searchBtn').addEventListener('click', function() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            currentSearchTerm = searchTerm;
-            filterInventory();
-        });
-        
-        document.getElementById('clearSearchBtn').addEventListener('click', function() {
-            clearSearch();
-        });
-        
-        // Filter functionality
-        document.querySelectorAll('[data-filter]').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                currentFilter = this.getAttribute('data-filter');
-                filterInventory();
-                
-                // Update filter button text
-                const filterBtn = document.getElementById('filterDropdown');
-                filterBtn.innerHTML = `<i class="fas fa-filter me-1"></i>${this.textContent}`;
-            });
-        });
-        
-        // Main filter function
-        function filterInventory() {
-            const rows = document.querySelectorAll('.inventory-row');
-            let visibleCount = 0;
             
-            rows.forEach(row => {
-                const partNumber = row.getAttribute('data-part-number');
-                const name = row.getAttribute('data-name');
-                const category = row.getAttribute('data-category');
-                const location = row.getAttribute('data-location');
-                const stockStatus = row.getAttribute('data-stock-status');
-                const activeStatus = row.getAttribute('data-active-status');
-                
-                // Check search term
-                const matchesSearch = !currentSearchTerm || 
-                    partNumber.includes(currentSearchTerm) ||
-                    name.includes(currentSearchTerm) ||
-                    category.includes(currentSearchTerm) ||
-                    location.includes(currentSearchTerm);
-                
-                // Check filter
-                let matchesFilter = true;
-                if (currentFilter === 'low-stock') {
-                    matchesFilter = stockStatus === 'low-stock';
-                } else if (currentFilter === 'high-stock') {
-                    matchesFilter = stockStatus === 'high-stock';
-                } else if (currentFilter === 'active') {
-                    matchesFilter = activeStatus === 'active';
-                } else if (currentFilter === 'inactive') {
-                    matchesFilter = activeStatus === 'inactive';
-                }
-                
-                // Show/hide row
-                if (matchesSearch && matchesFilter) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            // Update search info
-            updateSearchInfo(visibleCount, rows.length);
-        }
-        
-        // Update search results info
-        function updateSearchInfo(visibleCount, totalCount) {
-            const searchInfo = document.getElementById('searchInfo');
-            const searchResultsText = document.getElementById('searchResultsText');
-            
-            if (currentSearchTerm || currentFilter !== 'all') {
-                let message = '';
-                if (currentSearchTerm && currentFilter !== 'all') {
-                    message = `Showing ${visibleCount} of ${totalCount} items matching "${currentSearchTerm}" and filter "${currentFilter}"`;
-                } else if (currentSearchTerm) {
-                    message = `Showing ${visibleCount} of ${totalCount} items matching "${currentSearchTerm}"`;
-                } else if (currentFilter !== 'all') {
-                    message = `Showing ${visibleCount} of ${totalCount} items with filter "${currentFilter}"`;
-                }
-                searchResultsText.textContent = message;
-                searchInfo.style.display = 'block';
-            } else {
-                searchInfo.style.display = 'none';
-            }
-        }
-        
-        // Clear search function
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            currentSearchTerm = '';
-            currentFilter = 'all';
-            
-            // Reset filter button
+            // Update filter button text
             const filterBtn = document.getElementById('filterDropdown');
-            filterBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Filter';
-            
-            // Show all rows
-            document.querySelectorAll('.inventory-row').forEach(row => {
-                row.style.display = '';
-            });
-            
-            // Hide search info
-            document.getElementById('searchInfo').style.display = 'none';
-        }
-        
-        // Delete confirmation function
-        function confirmDelete(itemId, itemName) {
-            document.getElementById('itemName').textContent = itemName;
-            document.getElementById('deleteForm').action = `/inventory/${itemId}/delete`;
-            
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            deleteModal.show();
-        }
-        
-        // Initialize search on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set up enter key for search
-            document.getElementById('searchInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('searchBtn').click();
-                }
-            });
+            filterBtn.innerHTML = `<i class="fas fa-filter me-1"></i>${this.textContent}`;
         });
-    </script>
-</body>
-</html> 
+    });
+    
+    // Main filter function
+    function filterInventory() {
+        const rows = document.querySelectorAll('.inventory-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const partNumber = row.getAttribute('data-part-number');
+            const name = row.getAttribute('data-name');
+            const category = row.getAttribute('data-category');
+            const location = row.getAttribute('data-location');
+            const stockStatus = row.getAttribute('data-stock-status');
+            const activeStatus = row.getAttribute('data-active-status');
+            
+            // Check search term
+            const matchesSearch = !currentSearchTerm || 
+                partNumber.includes(currentSearchTerm) ||
+                name.includes(currentSearchTerm) ||
+                category.includes(currentSearchTerm) ||
+                location.includes(currentSearchTerm);
+            
+            // Check filter
+            let matchesFilter = true;
+            if (currentFilter === 'low-stock') {
+                matchesFilter = stockStatus === 'low-stock';
+            } else if (currentFilter === 'high-stock') {
+                matchesFilter = stockStatus === 'high-stock';
+            } else if (currentFilter === 'active') {
+                matchesFilter = activeStatus === 'active';
+            } else if (currentFilter === 'inactive') {
+                matchesFilter = activeStatus === 'inactive';
+            }
+            
+            // Show/hide row
+            if (matchesSearch && matchesFilter) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update search info
+        updateSearchInfo(visibleCount, rows.length);
+    }
+    
+    // Update search results info
+    function updateSearchInfo(visibleCount, totalCount) {
+        const searchInfo = document.getElementById('searchInfo');
+        const searchResultsText = document.getElementById('searchResultsText');
+        
+        if (currentSearchTerm || currentFilter !== 'all') {
+            let message = '';
+            if (currentSearchTerm && currentFilter !== 'all') {
+                message = `Showing ${visibleCount} of ${totalCount} items matching "${currentSearchTerm}" and filter "${currentFilter}"`;
+            } else if (currentSearchTerm) {
+                message = `Showing ${visibleCount} of ${totalCount} items matching "${currentSearchTerm}"`;
+            } else if (currentFilter !== 'all') {
+                message = `Showing ${visibleCount} of ${totalCount} items with filter "${currentFilter}"`;
+            }
+            searchResultsText.textContent = message;
+            searchInfo.style.display = 'block';
+        } else {
+            searchInfo.style.display = 'none';
+        }
+    }
+    
+    // Clear search function
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        currentSearchTerm = '';
+        currentFilter = 'all';
+        
+        // Reset filter button
+        const filterBtn = document.getElementById('filterDropdown');
+        filterBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Filter';
+        
+        // Show all rows
+        document.querySelectorAll('.inventory-row').forEach(row => {
+            row.style.display = '';
+        });
+        
+        // Hide search info
+        document.getElementById('searchInfo').style.display = 'none';
+    }
+    
+    // Delete confirmation function
+    function confirmDelete(itemId, itemName) {
+        document.getElementById('itemName').textContent = itemName;
+        document.getElementById('deleteForm').action = `/inventory/${itemId}/delete`;
+        
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    }
+    
+    // Initialize search on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up enter key for search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('searchBtn').click();
+            }
+        });
+    });
+</script>
+{% endblock %} 

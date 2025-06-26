@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Maps - CMMS{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .map-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .location-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .location-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .coordinates-form {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .coordinates-form input {
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-map-marked-alt"></i> Interactive Maps</h1>
+                <a href="{{ url_for('locations_list') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> View All Locations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="location-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ locations|length }}</div>
+                    <div class="stat-label">Total Locations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ locations|selectattr('latitude')|list|length }}</div>
+                    <div class="stat-label">Mapped Locations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ locations|selectattr('equipment')|list|length }}</div>
+                    <div class="stat-label">Locations with Equipment</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ locations|selectattr('users')|list|length }}</div>
+                    <div class="stat-label">Locations with Staff</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Map -->
+    <div class="row">
+        <div class="col-12">
+            <div class="map-container">
+                <h3><i class="fas fa-map"></i> Location Map</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="location-info">
+                <h3><i class="fas fa-info-circle"></i> Location Details</h3>
+                <div class="row">
+                    {% for location in locations %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ location.name }}</h5>
+                                <p class="card-text">
+                                    <strong>Address:</strong><br>
+                                    {{ location.address or 'No address provided' }}<br>
+                                    {% if location.city %}{{ location.city }}{% endif %}
+                                    {% if location.state %}, {{ location.state }}{% endif %}
+                                    {% if location.zip_code %} {{ location.zip_code }}{% endif %}
+                                </p>
+                                {% if location.latitude and location.longitude %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> 
+                                        {{ "%.4f"|format(location.latitude) }}, {{ "%.4f"|format(location.longitude) }}
+                                    </small>
+                                </p>
+                                {% else %}
+                                <p class="card-text">
+                                    <small class="text-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> No coordinates set
+                                    </small>
+                                </p>
+                                {% endif %}
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge bg-primary">{{ location.equipment|length }} Equipment</span>
+                                    <span class="badge bg-info">{{ location.users|length }} Staff</span>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{{ url_for('location_detail', id=location.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                    <a href="{{ url_for('location_edit', id=location.id) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map
+    var map = L.map('map').setView([39.8283, -98.5795], 4); // Center of USA
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Get locations data
+    var locations = {{ locations|tojson }};
+    var markers = [];
+    var bounds = L.latLngBounds();
+    
+    // Add markers for each location with coordinates
+    locations.forEach(function(location) {
+        if (location.latitude && location.longitude) {
+            var marker = L.marker([location.latitude, location.longitude])
+                .addTo(map)
+                .bindPopup(`
+                    <div style="min-width: 200px;">
+                        <h6><strong>${location.name}</strong></h6>
+                        <p style="margin: 5px 0;">
+                            <i class="fas fa-map-marker-alt"></i> 
+                            ${location.address || 'No address'}<br>
+                            ${location.city || ''} ${location.state || ''} ${location.zip_code || ''}
+                        </p>
+                        <p style="margin: 5px 0;">
+                            <i class="fas fa-cogs"></i> ${location.equipment_count} Equipment<br>
+                            <i class="fas fa-users"></i> ${location.users_count} Staff
+                        </p>
+                        <div style="margin-top: 10px;">
+                            <a href="/locations/${location.id}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                `);
+            
+            markers.push(marker);
+            bounds.extend([location.latitude, location.longitude]);
+        }
+    });
+    
+    // Fit map to show all markers if there are any
+    if (markers.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+    }
+    
+    // Add a legend
+    var legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function(map) {
+        var div = L.DomUtil.create('div', 'info legend');
+        div.style.backgroundColor = 'white';
+        div.style.padding = '10px';
+        div.style.borderRadius = '5px';
+        div.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        div.innerHTML = `
+            <h6><strong>Legend</strong></h6>
+            <p><i class="fas fa-map-marker-alt" style="color: red;"></i> Location</p>
+            <p><i class="fas fa-cogs"></i> Equipment Count</p>
+            <p><i class="fas fa-users"></i> Staff Count</p>
+        `;
+        return div;
+    };
+    legend.addTo(map);
+    
+    // Add search functionality
+    var searchControl = L.Control.extend({
+        options: {
+            position: 'topleft'
+        },
+        onAdd: function(map) {
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            container.innerHTML = `
+                <input type="text" id="location-search" placeholder="Search locations..." 
+                       style="width: 200px; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+            `;
+            
+            var searchInput = container.querySelector('#location-search');
+            searchInput.addEventListener('input', function() {
+                var searchTerm = this.value.toLowerCase();
+                markers.forEach(function(marker) {
+                    var locationName = marker.getPopup().getContent().toLowerCase();
+                    if (locationName.includes(searchTerm)) {
+                        marker.setOpacity(1);
+                    } else {
+                        marker.setOpacity(0.3);
+                    }
+                });
+            });
+            
+            return container;
+        }
+    });
+    map.addControl(new searchControl());
+});
+</script>
+{% endblock %} 

@@ -21,6 +21,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     google_id = db.Column(db.String(255), unique=True, nullable=True)  # For Google OAuth
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))  # New location relationship
     
     # Relationships - specify foreign_keys to avoid ambiguity
     assigned_work_orders = db.relationship('WorkOrder', 
@@ -66,7 +67,8 @@ class Equipment(db.Model):
     manufacturer = db.Column(db.String(100))
     model = db.Column(db.String(100))
     serial_number = db.Column(db.String(100))
-    location = db.Column(db.String(200))
+    location = db.Column(db.String(200))  # Keep for backward compatibility
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))  # New location relationship
     department = db.Column(db.String(100))
     purchase_date = db.Column(db.Date)
     warranty_expiry = db.Column(db.Date)
@@ -94,6 +96,7 @@ class Equipment(db.Model):
             'model': self.model,
             'serial_number': self.serial_number,
             'location': self.location,
+            'location_name': self.location_info.name if self.location_info else None,
             'department': self.department,
             'purchase_date': self.purchase_date.isoformat() if self.purchase_date else None,
             'warranty_expiry': self.warranty_expiry.isoformat() if self.warranty_expiry else None,
@@ -261,4 +264,82 @@ class WorkOrderPart(db.Model):
             'unit_cost': float(self.unit_cost) if self.unit_cost else None,
             'total_cost': float(self.unit_cost * self.quantity_used) if self.unit_cost else None,
             'created_at': self.created_at.isoformat()
+        }
+
+class Location(db.Model):
+    __tablename__ = 'locations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False, unique=True)
+    address = db.Column(db.Text)
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(50))
+    zip_code = db.Column(db.String(20))
+    country = db.Column(db.String(100), default='USA')
+    latitude = db.Column(db.Float)  # For map coordinates
+    longitude = db.Column(db.Float)  # For map coordinates
+    description = db.Column(db.Text)
+    contact_person = db.Column(db.String(100))
+    contact_phone = db.Column(db.String(20))
+    contact_email = db.Column(db.String(120))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    equipment = db.relationship('Equipment', backref='location_info', lazy=True)
+    users = db.relationship('User', backref='location_info', lazy=True)
+    
+    def __repr__(self):
+        return f'<Location {self.name}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'address': self.address,
+            'city': self.city,
+            'state': self.state,
+            'zip_code': self.zip_code,
+            'country': self.country,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'description': self.description,
+            'contact_person': self.contact_person,
+            'contact_phone': self.contact_phone,
+            'contact_email': self.contact_email,
+            'is_active': self.is_active,
+            'equipment_count': len(self.equipment),
+            'users_count': len(self.users),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+# Association table for many-to-many relationship between users and teams
+user_teams = db.Table('user_teams',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('team_id', db.Integer, db.ForeignKey('teams.id'), primary_key=True)
+)
+
+class Team(db.Model):
+    __tablename__ = 'teams'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relationships
+    members = db.relationship('User', secondary=user_teams, backref=db.backref('teams', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<Team {self.name}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'members': [user.id for user in self.members]
         } 

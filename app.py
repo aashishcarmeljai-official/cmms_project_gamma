@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import uuid
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FloatField, IntegerField, BooleanField, DateTimeField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional
 from flask_dance.contrib.google import make_google_blueprint, google
 
@@ -20,13 +20,13 @@ app = Flask(__name__)
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 # Initialize database with app
 db.init_app(app)
 
 # Import models after db initialization
-from models import User, Equipment, WorkOrder, MaintenanceSchedule, Inventory, WorkOrderPart
+from models import User, Equipment, WorkOrder, MaintenanceSchedule, Inventory, WorkOrderPart, Location, Team
 
 # Utility functions
 def generate_work_order_number():
@@ -336,6 +336,34 @@ def api_dashboard_stats():
     """API endpoint for dashboard statistics"""
     return jsonify(get_dashboard_stats())
 
+@app.route('/api/locations')
+def api_locations():
+    """API endpoint for locations"""
+    locations = Location.query.all()
+    return jsonify([loc.to_dict() for loc in locations])
+
+@app.route('/api/calendar-events')
+@login_required
+def api_calendar_events():
+    work_orders = WorkOrder.query.filter(WorkOrder.scheduled_date != None).all()
+    maints = MaintenanceSchedule.query.filter(MaintenanceSchedule.next_due != None, MaintenanceSchedule.is_active == True).all()
+    events = []
+    for wo in work_orders:
+        events.append({
+            'id': f'wo-{wo.id}',
+            'title': f'WO: {wo.title}',
+            'start': wo.scheduled_date.isoformat() if wo.scheduled_date else None,
+            'url': url_for('work_order_detail', id=wo.id)
+        })
+    for ms in maints:
+        events.append({
+            'id': f'ms-{ms.id}',
+            'title': f'Maintenance: {ms.equipment.name if ms.equipment else "Unknown"}',
+            'start': ms.next_due.isoformat() if ms.next_due else None,
+            'url': url_for('equipment_detail', id=ms.equipment_id)
+        })
+    return jsonify(events)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -379,6 +407,36 @@ class DeleteAccountForm(FlaskForm):
     confirm_text = StringField('Type "DELETE" to confirm', validators=[DataRequired()])
     password = PasswordField('Your Password', validators=[DataRequired()])
     submit = SubmitField('Delete Account')
+
+class LocationForm(FlaskForm):
+    name = StringField('Location Name', validators=[DataRequired(), Length(max=200)])
+    address = TextAreaField('Address', validators=[Optional(), Length(max=500)])
+    city = StringField('City', validators=[Optional(), Length(max=100)])
+    state = StringField('State/Province', validators=[Optional(), Length(max=50)])
+    zip_code = StringField('ZIP/Postal Code', validators=[Optional(), Length(max=20)])
+    country = StringField('Country', validators=[Optional(), Length(max=100)])
+    latitude = FloatField('Latitude', validators=[Optional()])
+    longitude = FloatField('Longitude', validators=[Optional()])
+    description = TextAreaField('Description', validators=[Optional(), Length(max=1000)])
+    contact_person = StringField('Contact Person', validators=[Optional(), Length(max=100)])
+    contact_phone = StringField('Contact Phone', validators=[Optional(), Length(max=20)])
+    contact_email = StringField('Contact Email', validators=[Optional(), Email(), Length(max=120)])
+    submit = SubmitField('Save Location')
+
+class MaintenanceScheduleForm(FlaskForm):
+    frequency = SelectField('Frequency', choices=[('daily', 'Daily'), ('weekly', 'Weekly'), ('monthly', 'Monthly'), ('yearly', 'Yearly')], validators=[DataRequired()])
+    frequency_value = IntegerField('Every X (days/weeks/months/years)', default=1, validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    estimated_duration = IntegerField('Estimated Duration (minutes)', validators=[Optional()])
+    next_due = DateTimeField('Next Due', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    is_active = BooleanField('Is Active', default=True)
+    submit = SubmitField('Save')
+
+class TeamForm(FlaskForm):
+    name = StringField('Team Name', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[Optional()])
+    members = SelectMultipleField('Add Members', coerce=int, validators=[Optional()])
+    submit = SubmitField('Save')
 
 # Google OAuth blueprint
 app.config['OAUTHLIB_INSECURE_TRANSPORT'] = True  # Remove in production
@@ -548,7 +606,249 @@ def delete_account():
     
     return render_template('delete_account.html', form=form)
 
+# Location routes
+@app.route('/locations')
+@login_required
+def locations_list():
+    """List all locations"""
+    search_query = request.args.get('search', '').strip()
+    
+    if search_query:
+        locations = Location.query.filter(
+            db.or_(
+                Location.name.ilike(f'%{search_query}%'),
+                Location.city.ilike(f'%{search_query}%'),
+                Location.state.ilike(f'%{search_query}%'),
+                Location.contact_person.ilike(f'%{search_query}%')
+            )
+        ).all()
+    else:
+        locations = Location.query.all()
+    
+    return render_template('locations/list.html', locations=locations, search_query=search_query)
+
+@app.route('/locations/new', methods=['GET', 'POST'])
+@login_required
+def location_new():
+    """Create new location"""
+    form = LocationForm()
+    
+    if form.validate_on_submit():
+        location = Location(
+            name=form.name.data,
+            address=form.address.data,
+            city=form.city.data,
+            state=form.state.data,
+            zip_code=form.zip_code.data,
+            country=form.country.data or 'USA',
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            description=form.description.data,
+            contact_person=form.contact_person.data,
+            contact_phone=form.contact_phone.data,
+            contact_email=form.contact_email.data
+        )
+        db.session.add(location)
+        db.session.commit()
+        flash('Location created successfully!', 'success')
+        return redirect(url_for('locations_list'))
+    
+    return render_template('locations/new.html', form=form)
+
+@app.route('/locations/<int:id>')
+@login_required
+def location_detail(id):
+    """Location detail page"""
+    location = Location.query.get_or_404(id)
+    equipment = Equipment.query.filter_by(location_id=id).all()
+    users = User.query.filter_by(location_id=id).all()
+    return render_template('locations/detail.html', location=location, equipment=equipment, users=users)
+
+@app.route('/locations/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def location_edit(id):
+    """Edit location"""
+    location = Location.query.get_or_404(id)
+    form = LocationForm(obj=location)
+    
+    if form.validate_on_submit():
+        location.name = form.name.data
+        location.address = form.address.data
+        location.city = form.city.data
+        location.state = form.state.data
+        location.zip_code = form.zip_code.data
+        location.country = form.country.data or 'USA'
+        location.latitude = form.latitude.data
+        location.longitude = form.longitude.data
+        location.description = form.description.data
+        location.contact_person = form.contact_person.data
+        location.contact_phone = form.contact_phone.data
+        location.contact_email = form.contact_email.data
+        
+        db.session.commit()
+        flash('Location updated successfully!', 'success')
+        return redirect(url_for('location_detail', id=id))
+    
+    return render_template('locations/edit.html', form=form, location=location)
+
+@app.route('/locations/<int:id>/delete', methods=['POST'])
+@login_required
+def location_delete(id):
+    """Delete location"""
+    location = Location.query.get_or_404(id)
+    
+    try:
+        # Check if location has associated equipment or users
+        equipment_count = Equipment.query.filter_by(location_id=id).count()
+        users_count = User.query.filter_by(location_id=id).count()
+        
+        if equipment_count > 0 or users_count > 0:
+            flash(f'Cannot delete location "{location.name}". It has {equipment_count} equipment and {users_count} users assigned to it.', 'error')
+            return redirect(url_for('location_detail', id=id))
+        
+        db.session.delete(location)
+        db.session.commit()
+        flash(f'Location "{location.name}" deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting location: {str(e)}', 'error')
+    
+    return redirect(url_for('locations_list'))
+
+@app.route('/maps')
+@login_required
+def maps():
+    """Interactive maps page showing all locations"""
+    locations = Location.query.filter_by(is_active=True).all()
+    locations_data = [loc.to_dict() for loc in locations]
+    return render_template('maps.html', locations=locations_data)
+
+@app.route('/equipment/<int:id>/maintenance-schedule/new', methods=['GET', 'POST'])
+@login_required
+def maintenance_schedule_new(id):
+    equipment = Equipment.query.get_or_404(id)
+    form = MaintenanceScheduleForm()
+    if form.validate_on_submit():
+        schedule = MaintenanceSchedule(
+            equipment_id=equipment.id,
+            frequency=form.frequency.data,
+            frequency_value=form.frequency_value.data,
+            description=form.description.data,
+            estimated_duration=form.estimated_duration.data,
+            next_due=form.next_due.data,
+            is_active=form.is_active.data
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        flash('Maintenance schedule created!', 'success')
+        return redirect(url_for('equipment_detail', id=equipment.id))
+    return render_template('maintenance_schedule_form.html', form=form, equipment=equipment, action='new')
+
+@app.route('/equipment/<int:id>/maintenance-schedule/<int:schedule_id>/edit', methods=['GET', 'POST'])
+@login_required
+def maintenance_schedule_edit(id, schedule_id):
+    equipment = Equipment.query.get_or_404(id)
+    schedule = MaintenanceSchedule.query.get_or_404(schedule_id)
+    form = MaintenanceScheduleForm(obj=schedule)
+    if form.validate_on_submit():
+        schedule.frequency = form.frequency.data
+        schedule.frequency_value = form.frequency_value.data
+        schedule.description = form.description.data
+        schedule.estimated_duration = form.estimated_duration.data
+        schedule.next_due = form.next_due.data
+        schedule.is_active = form.is_active.data
+        db.session.commit()
+        flash('Maintenance schedule updated!', 'success')
+        return redirect(url_for('equipment_detail', id=equipment.id))
+    return render_template('maintenance_schedule_form.html', form=form, equipment=equipment, action='edit')
+
+@app.route('/equipment/<int:id>/maintenance-schedule/<int:schedule_id>/delete', methods=['POST'])
+@login_required
+def maintenance_schedule_delete(id, schedule_id):
+    equipment = Equipment.query.get_or_404(id)
+    schedule = MaintenanceSchedule.query.get_or_404(schedule_id)
+    db.session.delete(schedule)
+    db.session.commit()
+    flash('Maintenance schedule deleted!', 'success')
+    return redirect(url_for('equipment_detail', id=equipment.id))
+
+@app.route('/teams', methods=['GET', 'POST'])
+@login_required
+def teams():
+    users = User.query.order_by(User.first_name, User.last_name).all()
+    teams = Team.query.order_by(Team.name).all()
+    search_user = request.args.get('search_user', '').strip().lower()
+    search_team = request.args.get('search_team', '').strip().lower()
+    filtered_users = [u for u in users if search_user in (u.first_name + ' ' + u.last_name + ' ' + u.username).lower()] if search_user else users
+    filtered_teams = [t for t in teams if search_team in t.name.lower()] if search_team else teams
+    return render_template('teams.html', users=filtered_users, teams=filtered_teams, all_users=users, all_teams=teams, search_user=search_user, search_team=search_team)
+
+@app.route('/teams/create', methods=['GET', 'POST'])
+@login_required
+def create_team():
+    form = TeamForm()
+    form.members.choices = [(u.id, f"{u.first_name} {u.last_name} ({u.username})") for u in User.query.order_by(User.first_name, User.last_name).all()]
+    if form.validate_on_submit():
+        team = Team(name=form.name.data, description=form.description.data)
+        team.members = User.query.filter(User.id.in_(form.members.data)).all()
+        db.session.add(team)
+        db.session.commit()
+        flash('Team created!', 'success')
+        return redirect(url_for('teams'))
+    return render_template('team_form.html', form=form, action='create')
+
+@app.route('/teams/<int:team_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_team(team_id):
+    team = Team.query.get_or_404(team_id)
+    form = TeamForm(obj=team)
+    form.members.choices = [(u.id, f"{u.first_name} {u.last_name} ({u.username})") for u in User.query.order_by(User.first_name, User.last_name).all()]
+    if request.method == 'GET':
+        form.members.data = [u.id for u in team.members]
+    if form.validate_on_submit():
+        team.name = form.name.data
+        team.description = form.description.data
+        team.members = User.query.filter(User.id.in_(form.members.data)).all()
+        db.session.commit()
+        flash('Team updated!', 'success')
+        return redirect(url_for('teams'))
+    return render_template('team_form.html', form=form, action='edit', team=team)
+
+@app.route('/teams/<int:team_id>/delete', methods=['POST'])
+@login_required
+def delete_team(team_id):
+    team = Team.query.get_or_404(team_id)
+    db.session.delete(team)
+    db.session.commit()
+    flash('Team deleted!', 'success')
+    return redirect(url_for('teams'))
+
+@app.route('/teams/<int:team_id>/add_member', methods=['POST'])
+@login_required
+def add_member_to_team(team_id):
+    team = Team.query.get_or_404(team_id)
+    user_id = int(request.form.get('user_id'))
+    user = User.query.get(user_id)
+    if user and user not in team.members:
+        team.members.append(user)
+        db.session.commit()
+        flash('User added to team!', 'success')
+    return redirect(url_for('teams'))
+
+@app.route('/teams/<int:team_id>/remove_member', methods=['POST'])
+@login_required
+def remove_member_from_team(team_id):
+    team = Team.query.get_or_404(team_id)
+    user_id = int(request.form.get('user_id'))
+    user = User.query.get(user_id)
+    if user and user in team.members:
+        team.members.remove(user)
+        db.session.commit()
+        flash('User removed from team!', 'success')
+    return redirect(url_for('teams'))
+
 if __name__ == '__main__':
+    print(os.getenv('DATABASE_URL'))
     with app.app_context():
-       db.create_all()
+        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
