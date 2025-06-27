@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Technician Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Technician Management</h1>
+            <p class="text-muted">Monitor technician performance and assignments</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Add Technician
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ filters.search }}" placeholder="Name, email, or username">
+                </div>
+                <div class="col-md-2">
+                    <label for="status_filter" class="form-label">Status</label>
+                    <select class="form-select" id="status_filter" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {{ 'selected' if filters.status == 'active' }}>Active</option>
+                        <option value="inactive" {{ 'selected' if filters.status == 'inactive' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="team_filter" class="form-label">Team</label>
+                    <select class="form-select" id="team_filter" name="team_id">
+                        <option value="">All Teams</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}" {{ 'selected' if filters.team_id == team.id|string }}>{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Technician Performance Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Technicians
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ technician_stats|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Avg Completion Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ "%.1f"|format((technician_stats|map(attribute='completion_rate')|sum) / technician_stats|length if technician_stats else 0) }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Avg On-Time Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ "%.1f"|format((technician_stats|map(attribute='on_time_rate')|sum) / technician_stats|length if technician_stats else 0) }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Active Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ technician_stats|map(attribute='total_tasks')|sum - technician_stats|map(attribute='completed_tasks')|sum }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technicians Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Technician Performance</h6>
+        </div>
+        <div class="card-body">
+            {% if technician_stats %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Technician</th>
+                            <th>Status</th>
+                            <th>Team</th>
+                            <th>Total Tasks</th>
+                            <th>Completed</th>
+                            <th>On-Time</th>
+                            <th>Completion Rate</th>
+                            <th>On-Time Rate</th>
+                            <th>Performance Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in technician_stats %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-3">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            {{ stat.technician.first_name[0] if stat.technician.first_name else stat.technician.username[0] }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ stat.technician.first_name }} {{ stat.technician.last_name }}</div>
+                                        <div class="text-muted">{{ stat.technician.email }}</div>
+                                        <small class="text-muted">@{{ stat.technician.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if stat.technician.is_active else 'danger' }}">
+                                    {{ 'Active' if stat.technician.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if stat.technician.teams %}
+                                    {% for team in stat.technician.teams %}
+                                        <span class="badge bg-info me-1">{{ team.name }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No team</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ stat.total_tasks }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ stat.completed_tasks }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ stat.on_time_tasks }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ stat.completion_rate }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format(stat.completion_rate) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ stat.on_time_rate }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format(stat.on_time_rate) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% set performance_score = stat.completion_rate * 0.6 + stat.on_time_rate * 0.4 %}
+                                <span class="badge bg-{{ 'success' if performance_score >= 80 else 'warning' if performance_score >= 60 else 'danger' }}">
+                                    {{ "%.1f"|format(performance_score) }}%
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{{ url_for('admin_users') }}?search={{ stat.technician.username }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Profile">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    <button class="btn btn-outline-info btn-sm" 
+                                            onclick="viewTechnicianTasks({{ stat.technician.id }})" title="View Tasks">
+                                        <i class="fas fa-tasks"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" 
+                                            onclick="viewTechnicianSchedule({{ stat.technician.id }})" title="View Schedule">
+                                        <i class="fas fa-calendar"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No technicians found</h5>
+                <p class="text-muted">Try adjusting your search criteria or add new technicians.</p>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add First Technician
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Completion Rate by Technician</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="completionRateChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">On-Time Rate by Technician</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="onTimeRateChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Performance -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Team Performance Overview</h6>
+        </div>
+        <div class="card-body">
+            {% if teams %}
+            <div class="row">
+                {% for team in teams %}
+                <div class="col-md-4 mb-3">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        {{ team.name }}
+                                    </div>
+                                    <div class="h6 mb-0 font-weight-bold text-gray-800">
+                                        {{ team.members|length }} members
+                                    </div>
+                                    <div class="text-xs text-muted">
+                                        {% set team_tasks = 0 %}
+                                        {% set team_completed = 0 %}
+                                        {% for member in team.members %}
+                                            {% if member.role == 'technician' %}
+                                                {% for stat in technician_stats %}
+                                                    {% if stat.technician.id == member.id %}
+                                                        {% set team_tasks = team_tasks + stat.total_tasks %}
+                                                        {% set team_completed = team_completed + stat.completed_tasks %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ team_completed }}/{{ team_tasks }} tasks completed
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-user-friends fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No teams found</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Completion Rate Chart
+    const completionRateCtx = document.getElementById('completionRateChart').getContext('2d');
+    new Chart(completionRateCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for stat in technician_stats %}'{{ stat.technician.first_name }} {{ stat.technician.last_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Completion Rate (%)',
+                data: [{% for stat in technician_stats %}{{ stat.completion_rate }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(0, 123, 255, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // On-Time Rate Chart
+    const onTimeRateCtx = document.getElementById('onTimeRateChart').getContext('2d');
+    new Chart(onTimeRateCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for stat in technician_stats %}'{{ stat.technician.first_name }} {{ stat.technician.last_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'On-Time Rate (%)',
+                data: [{% for stat in technician_stats %}{{ stat.on_time_rate }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(40, 167, 69, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+function viewTechnicianTasks(technicianId) {
+    window.open(`/admin/work-orders?technician_id=${technicianId}`, '_blank');
+}
+
+function viewTechnicianSchedule(technicianId) {
+    window.open(`/calendar?technician_id=${technicianId}`, '_blank');
+}
+</script>
+{% endblock %} 

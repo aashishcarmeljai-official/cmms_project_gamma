@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">System Settings</h1>
+            <p class="text-muted">Configure system preferences and parameters</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Settings Tabs -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <ul class="nav nav-tabs card-header-tabs" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <i class="fas fa-cog me-2"></i>General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup" type="button" role="tab">
+                        <i class="fas fa-database me-2"></i>Backup & Restore
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button" role="tab">
+                        <i class="fas fa-wrench me-2"></i>Maintenance
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="settingsTabContent">
+                <!-- General Settings -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <form method="POST" action="{{ url_for('admin_save_settings') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">System Information</h6>
+                                <div class="mb-3">
+                                    <label for="system_name" class="form-label">System Name</label>
+                                    <input type="text" class="form-control" id="system_name" name="system_name" value="CMMS System">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="company_name" class="form-label">Company Name</label>
+                                    <input type="text" class="form-control" id="company_name" name="company_name" value="Your Company">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-select" id="timezone" name="timezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">Eastern Time</option>
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="date_format" class="form-label">Date Format</label>
+                                    <select class="form-select" id="date_format" name="date_format">
+                                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Work Order Settings</h6>
+                                <div class="mb-3">
+                                    <label for="auto_assign" class="form-label">Auto-assign Work Orders</label>
+                                    <select class="form-select" id="auto_assign" name="auto_assign">
+                                        <option value="enabled">Enabled</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="default_priority" class="form-label">Default Priority</label>
+                                    <select class="form-select" id="default_priority" name="default_priority">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="work_order_prefix" class="form-label">Work Order Number Prefix</label>
+                                    <input type="text" class="form-control" id="work_order_prefix" name="work_order_prefix" value="WO">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="max_file_size" class="form-label">Max File Upload Size (MB)</label>
+                                    <input type="number" class="form-control" id="max_file_size" name="max_file_size" value="50">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save General Settings</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="tab-pane fade" id="security" role="tabpanel">
+                    <form method="POST" action="{{ url_for('admin_save_security_settings') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Password Policy</h6>
+                                <div class="mb-3">
+                                    <label for="min_password_length" class="form-label">Minimum Password Length</label>
+                                    <input type="number" class="form-control" id="min_password_length" name="min_password_length" value="8">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="require_special_chars" class="form-label">Require Special Characters</label>
+                                    <select class="form-select" id="require_special_chars" name="require_special_chars">
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password_expiry_days" class="form-label">Password Expiry (days)</label>
+                                    <input type="number" class="form-control" id="password_expiry_days" name="password_expiry_days" value="90">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="max_login_attempts" class="form-label">Max Login Attempts</label>
+                                    <input type="number" class="form-control" id="max_login_attempts" name="max_login_attempts" value="5">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Session Management</h6>
+                                <div class="mb-3">
+                                    <label for="session_timeout" class="form-label">Session Timeout (minutes)</label>
+                                    <input type="number" class="form-control" id="session_timeout" name="session_timeout" value="30">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="force_ssl" class="form-label">Force SSL</label>
+                                    <select class="form-select" id="force_ssl" name="force_ssl">
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="two_factor_auth" class="form-label">Two-Factor Authentication</label>
+                                    <select class="form-select" id="two_factor_auth" name="two_factor_auth">
+                                        <option value="optional">Optional</option>
+                                        <option value="required">Required</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ip_whitelist" class="form-label">IP Whitelist</label>
+                                    <textarea class="form-control" id="ip_whitelist" name="ip_whitelist" rows="3" placeholder="Enter IP addresses (one per line)"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="tab-pane fade" id="notifications" role="tabpanel">
+                    <form method="POST" action="{{ url_for('admin_save_notification_settings') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Email Notifications</h6>
+                                <div class="mb-3">
+                                    <label for="smtp_server" class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-control" id="smtp_server" name="smtp_server" value="smtp.gmail.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_port" class="form-label">SMTP Port</label>
+                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="587">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_username" class="form-label">SMTP Username</label>
+                                    <input type="email" class="form-control" id="smtp_username" name="smtp_username">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="smtp_password" class="form-label">SMTP Password</label>
+                                    <input type="password" class="form-control" id="smtp_password" name="smtp_password">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Notification Preferences</h6>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notify_new_work_orders" name="notify_new_work_orders" checked>
+                                        <label class="form-check-label" for="notify_new_work_orders">
+                                            New Work Orders
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notify_completed_tasks" name="notify_completed_tasks" checked>
+                                        <label class="form-check-label" for="notify_completed_tasks">
+                                            Completed Tasks
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notify_overdue_tasks" name="notify_overdue_tasks" checked>
+                                        <label class="form-check-label" for="notify_overdue_tasks">
+                                            Overdue Tasks
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notify_equipment_issues" name="notify_equipment_issues" checked>
+                                        <label class="form-check-label" for="notify_equipment_issues">
+                                            Equipment Issues
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Backup & Restore -->
+                <div class="tab-pane fade" id="backup" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Backup Settings</h6>
+                            <div class="mb-3">
+                                <label for="backup_frequency" class="form-label">Backup Frequency</label>
+                                <select class="form-select" id="backup_frequency" name="backup_frequency">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="backup_retention" class="form-label">Backup Retention (days)</label>
+                                <input type="number" class="form-control" id="backup_retention" name="backup_retention" value="30">
+                            </div>
+                            <div class="mb-3">
+                                <label for="backup_location" class="form-label">Backup Location</label>
+                                <input type="text" class="form-control" id="backup_location" name="backup_location" value="/backups">
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-primary" onclick="createBackup()">
+                                    <i class="fas fa-download me-2"></i>Create Manual Backup
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Restore Options</h6>
+                            <div class="mb-3">
+                                <label for="backup_file" class="form-label">Select Backup File</label>
+                                <input type="file" class="form-control" id="backup_file" name="backup_file">
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-warning" onclick="restoreBackup()">
+                                    <i class="fas fa-upload me-2"></i>Restore from Backup
+                                </button>
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Warning:</strong> Restoring from backup will overwrite all current data.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Mode -->
+                <div class="tab-pane fade" id="maintenance" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Maintenance Mode</h6>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="maintenance_mode" name="maintenance_mode">
+                                    <label class="form-check-label" for="maintenance_mode">
+                                        Enable Maintenance Mode
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="maintenance_message" class="form-label">Maintenance Message</label>
+                                <textarea class="form-control" id="maintenance_message" name="maintenance_message" rows="3" placeholder="Enter maintenance message for users"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="maintenance_end_time" class="form-label">Expected End Time</label>
+                                <input type="datetime-local" class="form-control" id="maintenance_end_time" name="maintenance_end_time">
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-warning" onclick="toggleMaintenanceMode()">
+                                    <i class="fas fa-wrench me-2"></i>Toggle Maintenance Mode
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">System Health</h6>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Database Health</span>
+                                    <span class="badge bg-success">Good</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 4px;">
+                                    <div class="progress-bar bg-success" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Storage Usage</span>
+                                    <span class="badge bg-warning">75%</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 4px;">
+                                    <div class="progress-bar bg-warning" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Memory Usage</span>
+                                    <span class="badge bg-info">60%</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 4px;">
+                                    <div class="progress-bar bg-info" style="width: 60%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-info" onclick="runSystemDiagnostics()">
+                                    <i class="fas fa-stethoscope me-2"></i>Run Diagnostics
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function createBackup() {
+    if (confirm('Are you sure you want to create a system backup? This may take a few minutes.')) {
+        // Implement backup functionality
+        alert('Backup initiated. You will receive a notification when complete.');
+    }
+}
+
+function restoreBackup() {
+    const fileInput = document.getElementById('backup_file');
+    if (!fileInput.files[0]) {
+        alert('Please select a backup file first.');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to restore from backup? This will overwrite all current data.')) {
+        // Implement restore functionality
+        alert('Restore initiated. The system will be unavailable during the process.');
+    }
+}
+
+function toggleMaintenanceMode() {
+    const maintenanceMode = document.getElementById('maintenance_mode');
+    const message = maintenanceMode.checked ? 'disable' : 'enable';
+    
+    if (confirm(`Are you sure you want to ${message} maintenance mode?`)) {
+        // Implement maintenance mode toggle
+        alert(`Maintenance mode ${message}d successfully.`);
+    }
+}
+
+function runSystemDiagnostics() {
+    alert('System diagnostics initiated. Results will be displayed shortly.');
+}
+</script>
+{% endblock %} 

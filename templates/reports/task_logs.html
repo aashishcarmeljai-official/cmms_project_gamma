@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Task Logs - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Task Logs</h1>
+            <p class="text-muted">Comprehensive task history and audit trail</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('export_csv', **filters) }}" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Export CSV
+            </a>
+            <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ filters.start_date or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ filters.end_date or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="all" {{ 'selected' if filters.status == 'all' }}>All Status</option>
+                        <option value="open" {{ 'selected' if filters.status == 'open' }}>Open</option>
+                        <option value="in_progress" {{ 'selected' if filters.status == 'in_progress' }}>In Progress</option>
+                        <option value="completed" {{ 'selected' if filters.status == 'completed' }}>Completed</option>
+                        <option value="cancelled" {{ 'selected' if filters.status == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="priority" class="form-label">Priority</label>
+                    <select class="form-select" id="priority" name="priority">
+                        <option value="all" {{ 'selected' if filters.priority == 'all' }}>All Priority</option>
+                        <option value="urgent" {{ 'selected' if filters.priority == 'urgent' }}>Urgent</option>
+                        <option value="high" {{ 'selected' if filters.priority == 'high' }}>High</option>
+                        <option value="medium" {{ 'selected' if filters.priority == 'medium' }}>Medium</option>
+                        <option value="low" {{ 'selected' if filters.priority == 'low' }}>Low</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="equipment_id" class="form-label">Equipment</label>
+                    <select class="form-select" id="equipment_id" name="equipment_id">
+                        <option value="all" {{ 'selected' if filters.equipment_id == 'all' }}>All Equipment</option>
+                        {% for equipment in equipment_list %}
+                        <option value="{{ equipment.id }}" {{ 'selected' if filters.equipment_id == equipment.id|string }}>{{ equipment.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="assigned_to" class="form-label">Assigned To</label>
+                    <select class="form-select" id="assigned_to" name="assigned_to">
+                        <option value="all" {{ 'selected' if filters.assigned_to == 'all' }}>All Technicians</option>
+                        {% for user in users_list %}
+                        <option value="{{ user.id }}" {{ 'selected' if filters.assigned_to == user.id|string }}>{{ user.first_name }} {{ user.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                    <a href="{{ url_for('task_logs') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Filtered Results
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ work_orders|length }} work orders found
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-search fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Logs Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Task Logs</h6>
+        </div>
+        <div class="card-body">
+            {% if work_orders %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Work Order ID</th>
+                            <th>Title</th>
+                            <th>Equipment</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Created Date</th>
+                            <th>Due Date</th>
+                            <th>Actual End</th>
+                            <th>On Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for work_order in work_orders %}
+                        <tr>
+                            <td>
+                                <strong>{{ work_order.work_order_number }}</strong>
+                            </td>
+                            <td>
+                                <div>{{ work_order.title }}</div>
+                                <small class="text-muted">{{ work_order.type.title() }}</small>
+                            </td>
+                            <td>
+                                {% if work_order.equipment %}
+                                    <div>{{ work_order.equipment.name }}</div>
+                                    <small class="text-muted">{{ work_order.equipment.location }}</small>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'danger' if work_order.status == 'cancelled' else 'secondary' }}">
+                                    {{ work_order.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if work_order.priority == 'urgent' else 'warning' if work_order.priority == 'high' else 'info' if work_order.priority == 'medium' else 'success' }}">
+                                    {{ work_order.priority.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if work_order.assigned_technician %}
+                                    <div>{{ work_order.assigned_technician.first_name }} {{ work_order.assigned_technician.last_name }}</div>
+                                    <small class="text-muted">{{ work_order.assigned_technician.email }}</small>
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ work_order.created_at.strftime('%Y-%m-%d') if work_order.created_at else 'N/A' }}</div>
+                                <small class="text-muted">{{ work_order.created_at.strftime('%H:%M') if work_order.created_at else '' }}</small>
+                            </td>
+                            <td>
+                                {% if work_order.due_date %}
+                                    <div>{{ work_order.due_date.strftime('%Y-%m-%d') }}</div>
+                                    <small class="text-muted">{{ work_order.due_date.strftime('%H:%M') }}</small>
+                                {% else %}
+                                    <span class="text-muted">No due date</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if work_order.actual_end_time %}
+                                    <div>{{ work_order.actual_end_time.strftime('%Y-%m-%d') }}</div>
+                                    <small class="text-muted">{{ work_order.actual_end_time.strftime('%H:%M') }}</small>
+                                {% else %}
+                                    <span class="text-muted">Not completed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if work_order.status == 'completed' and work_order.actual_end_time and work_order.due_date %}
+                                    {% if work_order.actual_end_time <= work_order.due_date %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>On Time
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Late
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if work_order.actual_duration %}
+                                    <div>{{ work_order.actual_duration }} min</div>
+                                    {% if work_order.estimated_duration %}
+                                        <small class="text-muted">Est: {{ work_order.estimated_duration }} min</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{{ url_for('work_order_detail', id=work_order.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if work_order.images or work_order.videos or work_order.voice_notes %}
+                                    <button class="btn btn-outline-info btn-sm" title="Has Media" disabled>
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No work orders found</h5>
+                <p class="text-muted">Try adjusting your filters or create new work orders.</p>
+                <a href="{{ url_for('new_work_order') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Work Order
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    {% if work_orders %}
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Export Options</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Export Filtered Data</h6>
+                    <p class="text-muted">Download the current filtered results as a CSV file for external analysis.</p>
+                    <a href="{{ url_for('export_csv', **filters) }}" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export to CSV
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <h6>Compliance Report</h6>
+                    <p class="text-muted">Generate a comprehensive compliance report for audit purposes.</p>
+                    <a href="{{ url_for('export_compliance_report') }}" class="btn btn-warning">
+                        <i class="fas fa-file-certificate me-2"></i>Generate Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-submit form when filters change
+    document.querySelectorAll('select[name], input[name]').forEach(element => {
+        element.addEventListener('change', function() {
+            // Don't auto-submit for date inputs to allow range selection
+            if (this.type !== 'date') {
+                this.closest('form').submit();
+            }
+        });
+    });
+
+    // Set default date range to last 30 days if no dates selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDate = document.getElementById('start_date');
+        const endDate = document.getElementById('end_date');
+        
+        if (!startDate.value && !endDate.value) {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            startDate.value = thirtyDaysAgo.toISOString().split('T')[0];
+            endDate.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %} 

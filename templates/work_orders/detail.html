@@ -7,6 +7,192 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+    .media-gallery {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .media-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .media-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #dee2e6;
+        background: white;
+        transition: transform 0.2s;
+    }
+
+    .media-item:hover {
+        transform: scale(1.05);
+    }
+
+    .media-item img, .media-item video {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+
+    .media-item.audio {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .media-item.audio i {
+        font-size: 3rem;
+        color: white;
+    }
+
+    .media-item .media-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .media-item:hover .media-overlay {
+        opacity: 1;
+    }
+
+    .media-overlay i {
+        color: white;
+        font-size: 2rem;
+    }
+
+    .media-modal {
+        display: none;
+        position: fixed;
+        z-index: 1050;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .media-modal-content {
+        position: relative;
+        margin: auto;
+        padding: 20px;
+        width: 90%;
+        max-width: 800px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .media-modal img, .media-modal video {
+        width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+    }
+
+    .media-modal audio {
+        width: 100%;
+        margin: 20px 0;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close-modal:hover {
+        color: #bbb;
+    }
+
+    .media-section {
+        margin: 30px 0;
+    }
+
+    .media-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .media-tabs {
+        display: flex;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+
+    .media-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .media-tab.active {
+        border-bottom-color: #007bff;
+        color: #007bff;
+        font-weight: bold;
+    }
+
+    .media-tab:hover {
+        background: #f8f9fa;
+    }
+
+    .media-content {
+        display: none;
+    }
+
+    .media-content.active {
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .media-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .media-item img, .media-item video {
+            height: 120px;
+        }
+        
+        .media-item.audio {
+            height: 120px;
+        }
+        
+        .media-modal-content {
+            width: 95%;
+            padding: 10px;
+        }
+        
+        .close-modal {
+            top: 10px;
+            right: 20px;
+            font-size: 30px;
+        }
+    }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -203,6 +389,26 @@
                                             {% endif %}
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <td><strong>Due Date:</strong></td>
+                                        <td>
+                                            {% if work_order.due_date %}
+                                                {{ work_order.due_date.strftime('%Y-%m-%d %H:%M') }}
+                                            {% else %}
+                                                <span class="text-muted">Not set</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Assigned Team:</strong></td>
+                                        <td>
+                                            {% if work_order.assigned_team %}
+                                                {{ work_order.assigned_team.name }}
+                                            {% else %}
+                                                <span class="text-muted">No team assigned</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -213,6 +419,141 @@
                                 <p>{{ work_order.description }}</p>
                             </div>
                         </div>
+                        
+                        <!-- Checklist Section -->
+                        {% if work_order.checklist_items %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Checklist Items</h6>
+                                <div class="list-group">
+                                    {% for checklist_item in work_order.checklist_items %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div class="ms-2 me-auto">
+                                            <div class="d-flex align-items-center">
+                                                <form method="POST" action="/work-orders/{{ work_order.id }}/checklist/{{ checklist_item.id }}/toggle" style="display: inline;" class="me-3">
+                                                    <button type="submit" class="btn btn-sm btn-{{ 'success' if checklist_item.is_completed else 'outline-success' }}">
+                                                        <i class="fas fa-{{ 'check' if checklist_item.is_completed else 'circle' }}"></i>
+                                                    </button>
+                                                </form>
+                                                <div>
+                                                    <div class="fw-bold">
+                                                        {{ checklist_item.sop_checklist_item.order }}. {{ checklist_item.sop_checklist_item.description }}
+                                                        {% if not checklist_item.sop_checklist_item.is_required %}
+                                                        <span class="badge bg-warning text-dark ms-2">Optional</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% if checklist_item.sop_checklist_item.expected_result %}
+                                                    <small class="text-muted">Expected: {{ checklist_item.sop_checklist_item.expected_result }}</small>
+                                                    {% endif %}
+                                                    {% if checklist_item.is_completed %}
+                                                    <br><small class="text-success">
+                                                        <i class="fas fa-user"></i> Completed by {{ checklist_item.completed_by.first_name }} {{ checklist_item.completed_by.last_name }}
+                                                        on {{ checklist_item.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                                                    </small>
+                                                    {% endif %}
+                                                    {% if checklist_item.notes %}
+                                                    <br><small class="text-info">{{ checklist_item.notes }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% if not checklist_item.is_completed %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="addNotes({{ checklist_item.id }})">
+                                            <i class="fas fa-edit"></i> Notes
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Progress Summary -->
+                                <div class="mt-3">
+                                    {% set completed_count = work_order.checklist_items | selectattr('is_completed') | list | length %}
+                                    {% set total_count = work_order.checklist_items | length %}
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ (completed_count / total_count * 100) | round(1) }}%">
+                                            {{ (completed_count / total_count * 100) | round(1) }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ completed_count }} of {{ total_count }} items completed</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if work_order.images or work_order.videos or work_order.voice_notes %}
+                        <div class="media-section">
+                            <div class="media-tabs">
+                                {% if work_order.images %}
+                                <button class="media-tab active" onclick="showMediaTab('images')">
+                                    <i class="fas fa-camera me-2"></i>Photos ({{ work_order.images.split(',')|length }})
+                                </button>
+                                {% endif %}
+                                {% if work_order.videos %}
+                                <button class="media-tab" onclick="showMediaTab('videos')">
+                                    <i class="fas fa-video me-2"></i>Videos ({{ work_order.videos.split(',')|length }})
+                                </button>
+                                {% endif %}
+                                {% if work_order.voice_notes %}
+                                <button class="media-tab" onclick="showMediaTab('voice')">
+                                    <i class="fas fa-microphone me-2"></i>Voice Notes ({{ work_order.voice_notes.split(',')|length }})
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Images Tab -->
+                            {% if work_order.images %}
+                            <div id="images-content" class="media-content active">
+                                <div class="media-grid">
+                                    {% for image in work_order.images.split(',') %}
+                                    <div class="media-item" onclick="openMediaModal('{{ url_for('static', filename=image.strip()) }}', 'image')">
+                                        <img src="{{ url_for('static', filename=image.strip()) }}" alt="Work Order Image">
+                                        <div class="media-overlay">
+                                            <i class="fas fa-expand"></i>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Videos Tab -->
+                            {% if work_order.videos %}
+                            <div id="videos-content" class="media-content">
+                                <div class="media-grid">
+                                    {% for video in work_order.videos.split(',') %}
+                                    <div class="media-item" onclick="openMediaModal('{{ url_for('static', filename=video.strip()) }}', 'video')">
+                                        <video>
+                                            <source src="{{ url_for('static', filename=video.strip()) }}" type="video/mp4">
+                                        </video>
+                                        <div class="media-overlay">
+                                            <i class="fas fa-play"></i>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Voice Notes Tab -->
+                            {% if work_order.voice_notes %}
+                            <div id="voice-content" class="media-content">
+                                <div class="media-grid">
+                                    {% for voice in work_order.voice_notes.split(',') %}
+                                    <div class="media-item audio" onclick="openMediaModal('{{ url_for('static', filename=voice.strip()) }}', 'audio')">
+                                        <i class="fas fa-volume-up"></i>
+                                        <div class="media-overlay">
+                                            <i class="fas fa-play"></i>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         
                         {% if work_order.completion_notes %}
                         <div class="row">
@@ -298,6 +639,57 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Comments Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>Comments ({{ work_order.comments|length }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add Comment Form -->
+                        <form method="POST" action="/work-orders/{{ work_order.id }}/add-comment" enctype="multipart/form-data" class="mb-4">
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">Add Comment</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Add a comment or update..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comment_images" class="form-label">Attach Images (optional)</label>
+                                <input type="file" class="form-control" id="comment_images" name="images" multiple accept="image/*">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Add Comment
+                            </button>
+                        </form>
+                        
+                        <!-- Comments List -->
+                        {% if work_order.comments %}
+                        <div class="comments-list">
+                            {% for comment in work_order.comments|sort(attribute='created_at', reverse=true) %}
+                            <div class="comment-item border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ comment.user.first_name }} {{ comment.user.last_name }}</strong>
+                                        <small class="text-muted ms-2">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                </div>
+                                <p class="mt-2 mb-2">{{ comment.comment }}</p>
+                                {% if comment.images %}
+                                <div class="comment-images">
+                                    {% for image in comment.images.split(',') %}
+                                    <img src="{{ url_for('static', filename=image.strip()) }}" class="img-thumbnail me-2" style="max-width: 100px;" alt="Comment image">
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No comments yet. Be the first to add one!</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <!-- Sidebar -->
@@ -371,6 +763,110 @@
         </div>
     </main>
 
+    <!-- Notes Modal -->
+    <div class="modal fade" id="notesModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Notes to Checklist Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="notesForm" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add notes about this checklist item..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Notes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Modal -->
+    <div id="mediaModal" class="media-modal">
+        <div class="media-modal-content">
+            <span class="close-modal" onclick="closeMediaModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function addNotes(checklistItemId) {
+        const form = document.getElementById('notesForm');
+        form.action = `/work-orders/{{ work_order.id }}/checklist/${checklistItemId}/notes`;
+        new bootstrap.Modal(document.getElementById('notesModal')).show();
+    }
+
+    function showMediaTab(tabName) {
+        // Hide all content
+        document.querySelectorAll('.media-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.media-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected content
+        document.getElementById(tabName + '-content').classList.add('active');
+        
+        // Add active class to clicked tab
+        event.target.classList.add('active');
+    }
+
+    function openMediaModal(src, type) {
+        const modal = document.getElementById('mediaModal');
+        const content = document.getElementById('modalContent');
+        
+        if (type === 'image') {
+            content.innerHTML = `<img src="${src}" alt="Media">`;
+        } else if (type === 'video') {
+            content.innerHTML = `<video controls autoplay><source src="${src}" type="video/mp4"></video>`;
+        } else if (type === 'audio') {
+            content.innerHTML = `<audio controls autoplay><source src="${src}" type="audio/mpeg"></audio>`;
+        }
+        
+        modal.style.display = 'block';
+    }
+
+    function closeMediaModal() {
+        document.getElementById('mediaModal').style.display = 'none';
+        document.getElementById('modalContent').innerHTML = '';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('mediaModal');
+        if (event.target === modal) {
+            closeMediaModal();
+        }
+    }
+
+    function toggleChecklistItem(workOrderId, itemId, isCompleted) {
+        fetch(`/work-orders/${workOrderId}/checklist/${itemId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `is_completed=${isCompleted}`
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating checklist item');
+        });
+    }
+    </script>
 </body>
 </html> 

@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Actions - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Quick Actions</h1>
+            <p class="text-muted">Common administrative tasks and shortcuts</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Action Cards -->
+    <div class="row">
+        <!-- User Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-users me-2"></i>User Management
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-cog me-2"></i>Manage Users
+                        </a>
+                        <a href="{{ url_for('admin_roles') }}" class="btn btn-outline-info">
+                            <i class="fas fa-user-tag me-2"></i>Role Management
+                        </a>
+                        <a href="{{ url_for('admin_teams') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-friends me-2"></i>Team Management
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="bulkUserActions()">
+                            <i class="fas fa-users-cog me-2"></i>Bulk User Actions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cogs me-2"></i>Asset Management
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_equipment') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-tools me-2"></i>Manage Equipment
+                        </a>
+                        <a href="{{ url_for('inventory_list') }}" class="btn btn-outline-info">
+                            <i class="fas fa-boxes me-2"></i>Manage Inventory
+                        </a>
+                        <a href="{{ url_for('locations_list') }}" class="btn btn-outline-success">
+                            <i class="fas fa-map-marker-alt me-2"></i>Manage Locations
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="bulkAssetActions()">
+                            <i class="fas fa-cogs me-2"></i>Bulk Asset Actions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Order Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clipboard-list me-2"></i>Work Order Management
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_work_orders') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-tasks me-2"></i>Manage Work Orders
+                        </a>
+                        <a href="{{ url_for('work_order_new') }}" class="btn btn-outline-info">
+                            <i class="fas fa-plus me-2"></i>Create Work Order
+                        </a>
+                        <a href="{{ url_for('admin_technicians') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-cog me-2"></i>Technician Performance
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="bulkWorkOrderActions()">
+                            <i class="fas fa-tasks me-2"></i>Bulk Work Order Actions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance & SOPs -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tools me-2"></i>Maintenance & SOPs
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('sops_list') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-clipboard-check me-2"></i>Manage SOPs
+                        </a>
+                        <a href="{{ url_for('maintenance_calendar') }}" class="btn btn-outline-info">
+                            <i class="fas fa-calendar me-2"></i>Maintenance Calendar
+                        </a>
+                        <a href="{{ url_for('teams') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-friends me-2"></i>Manage Teams
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="scheduleMaintenance()">
+                            <i class="fas fa-calendar-plus me-2"></i>Schedule Maintenance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporting & Analytics -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Reporting & Analytics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-chart-bar me-2"></i>System Analytics
+                        </a>
+                        <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-info">
+                            <i class="fas fa-file-alt me-2"></i>Reports Dashboard
+                        </a>
+                        <a href="{{ url_for('export_csv') }}" class="btn btn-outline-success">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="generateComplianceReport()">
+                            <i class="fas fa-certificate me-2"></i>Compliance Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Administration -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cog me-2"></i>System Administration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-cogs me-2"></i>System Settings
+                        </a>
+                        <button class="btn btn-outline-info" onclick="backupSystem()">
+                            <i class="fas fa-database me-2"></i>Backup System
+                        </button>
+                        <button class="btn btn-outline-success" onclick="systemHealth()">
+                            <i class="fas fa-heartbeat me-2"></i>System Health
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="maintenanceMode()">
+                            <i class="fas fa-wrench me-2"></i>Maintenance Mode
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent System Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>User</th>
+                                    <th>Details</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge bg-success">User Created</span></td>
+                                    <td>John Doe</td>
+                                    <td>New technician account created</td>
+                                    <td>2024-01-15 14:30</td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-info">Work Order Assigned</span></td>
+                                    <td>Jane Smith</td>
+                                    <td>WO-20240115-001 assigned to technician</td>
+                                    <td>2024-01-15 13:45</td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-warning">Equipment Status</span></td>
+                                    <td>System</td>
+                                    <td>Equipment #123 status changed to maintenance</td>
+                                    <td>2024-01-15 12:20</td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-primary">Report Generated</span></td>
+                                    <td>Admin User</td>
+                                    <td>Monthly performance report exported</td>
+                                    <td>2024-01-15 11:15</td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Database</span>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>File Storage</span>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Email Service</span>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Backup System</span>
+                            <span class="badge bg-success">Last: 2h ago</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-primary">25</div>
+                                <small class="text-muted">Active Users</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-success">15</div>
+                                <small class="text-muted">Open Work Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-info">45</div>
+                                <small class="text-muted">Total Equipment</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-warning">8</div>
+                                <small class="text-muted">Pending Tasks</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function bulkUserActions() {
+    window.open('{{ url_for("admin_users") }}', '_blank');
+}
+
+function bulkAssetActions() {
+    window.open('{{ url_for("admin_equipment") }}', '_blank');
+}
+
+function bulkWorkOrderActions() {
+    window.open('{{ url_for("admin_work_orders") }}', '_blank');
+}
+
+function scheduleMaintenance() {
+    window.open('{{ url_for("maintenance_calendar") }}', '_blank');
+}
+
+function generateComplianceReport() {
+    window.open('{{ url_for("export_compliance_report") }}', '_blank');
+}
+
+function backupSystem() {
+    if (confirm('Are you sure you want to create a system backup? This may take a few minutes.')) {
+        // Implement backup functionality
+        alert('Backup initiated. You will receive a notification when complete.');
+    }
+}
+
+function systemHealth() {
+    window.open('{{ url_for("admin_analytics") }}', '_blank');
+}
+
+function maintenanceMode() {
+    if (confirm('Are you sure you want to enable maintenance mode? This will restrict access to the system.')) {
+        // Implement maintenance mode functionality
+        alert('Maintenance mode enabled. Users will see a maintenance page.');
+    }
+}
+</script>
+{% endblock %} 

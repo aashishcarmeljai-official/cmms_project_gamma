@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Edit Asset - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Quick Edit Asset</h1>
+            <p class="text-muted">Update equipment information</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('quick_assets') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Registry
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Edit Asset: {{ equipment.name }}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Asset Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ equipment.name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        {% for category in categories %}
+                                        <option value="{{ category }}" {{ 'selected' if equipment.category == category }}>{{ category }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="serial_number" class="form-label">Serial Number</label>
+                                    <input type="text" class="form-control" id="serial_number" name="serial_number" 
+                                           value="{{ equipment.serial_number or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="">Select Department</option>
+                                        {% for department in departments %}
+                                        <option value="{{ department }}" {{ 'selected' if equipment.department == department }}>{{ department }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <select class="form-select" id="location" name="location">
+                                        <option value="">Select Location</option>
+                                        {% for location in locations %}
+                                        <option value="{{ location }}" {{ 'selected' if equipment.location == location }}>{{ location }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="operational" {{ 'selected' if equipment.status == 'operational' }}>Operational</option>
+                                        <option value="maintenance" {{ 'selected' if equipment.status == 'maintenance' }}>Maintenance</option>
+                                        <option value="offline" {{ 'selected' if equipment.status == 'offline' }}>Offline</option>
+                                        <option value="out_of_service" {{ 'selected' if equipment.status == 'out_of_service' }}>Out of Service</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   value="{{ equipment.tags or '' }}" placeholder="Enter tags separated by commas">
+                            <small class="form-text text-muted">Example: critical, production, maintenance</small>
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{{ url_for('quick_assets') }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Asset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Asset Summary -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Asset Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Equipment ID:</strong> {{ equipment.equipment_id }}</p>
+                            <p><strong>Created:</strong> {{ equipment.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Last Updated:</strong> {{ equipment.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Current Status:</strong> 
+                                <span class="badge bg-{{ 'success' if equipment.status == 'operational' else 'warning' if equipment.status == 'maintenance' else 'danger' }}">
+                                    {{ equipment.status.replace('_', ' ').title() }}
+                                </span>
+                            </p>
+                            <p><strong>Category:</strong> {{ equipment.category }}</p>
+                            <p><strong>Tags:</strong> 
+                                {% if equipment.tags %}
+                                    {% for tag in equipment.tags.split(',') %}
+                                        <span class="badge bg-secondary me-1">#{{ tag.strip() }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No tags</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

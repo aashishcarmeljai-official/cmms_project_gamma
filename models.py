@@ -14,10 +14,12 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
-    role = db.Column(db.String(20), default='technician')  # admin, manager, technician
+    role = db.Column(db.String(20), default='technician')  # admin, manager, technician, viewer
     phone = db.Column(db.String(20))
     department = db.Column(db.String(50))
     is_active = db.Column(db.Boolean, default=True)
+    last_login = db.Column(db.DateTime)
+    password_reset_required = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     google_id = db.Column(db.String(255), unique=True, nullable=True)  # For Google OAuth
@@ -53,6 +55,8 @@ class User(UserMixin, db.Model):
             'phone': self.phone,
             'department': self.department,
             'is_active': self.is_active,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'password_reset_required': self.password_reset_required,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
@@ -64,18 +68,21 @@ class Equipment(db.Model):
     name = db.Column(db.String(200), nullable=False)
     equipment_id = db.Column(db.String(50), unique=True, nullable=False)  # Asset tag/ID
     category = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(50))  # Equipment type for admin filtering
     manufacturer = db.Column(db.String(100))
     model = db.Column(db.String(100))
     serial_number = db.Column(db.String(100))
     location = db.Column(db.String(200))  # Keep for backward compatibility
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))  # New location relationship
     department = db.Column(db.String(100))
+    tags = db.Column(db.Text)  # Comma-separated tags for filtering
     purchase_date = db.Column(db.Date)
     warranty_expiry = db.Column(db.Date)
-    status = db.Column(db.String(20), default='operational')  # operational, maintenance, out_of_service
+    status = db.Column(db.String(20), default='operational')  # operational, maintenance, offline, out_of_service
     criticality = db.Column(db.String(20), default='medium')  # low, medium, high, critical
     description = db.Column(db.Text)
     specifications = db.Column(db.Text)
+    last_maintenance_date = db.Column(db.DateTime)  # Last maintenance performed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -92,18 +99,21 @@ class Equipment(db.Model):
             'name': self.name,
             'equipment_id': self.equipment_id,
             'category': self.category,
+            'type': self.type,
             'manufacturer': self.manufacturer,
             'model': self.model,
             'serial_number': self.serial_number,
             'location': self.location,
             'location_name': self.location_info.name if self.location_info else None,
             'department': self.department,
+            'tags': self.tags,
             'purchase_date': self.purchase_date.isoformat() if self.purchase_date else None,
             'warranty_expiry': self.warranty_expiry.isoformat() if self.warranty_expiry else None,
             'status': self.status,
             'criticality': self.criticality,
             'description': self.description,
             'specifications': self.specifications,
+            'last_maintenance_date': self.last_maintenance_date.isoformat() if self.last_maintenance_date else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
@@ -120,15 +130,24 @@ class WorkOrder(db.Model):
     type = db.Column(db.String(20), default='corrective')  # corrective, preventive, emergency
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=False)
     assigned_technician_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    assigned_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))  # New: Team assignment
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     scheduled_date = db.Column(db.DateTime)
+    due_date = db.Column(db.DateTime)  # New: Due date field
     estimated_duration = db.Column(db.Integer)  # in minutes
     actual_duration = db.Column(db.Integer)  # in minutes
     actual_start_time = db.Column(db.DateTime)
     actual_end_time = db.Column(db.DateTime)
     completion_notes = db.Column(db.Text)
+    images = db.Column(db.Text)  # Store image file paths as JSON
+    videos = db.Column(db.Text)  # Store video file paths as JSON
+    voice_notes = db.Column(db.Text)  # Store voice note file paths as JSON
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    assigned_team = db.relationship('Team', backref='assigned_work_orders')
+    comments = db.relationship('WorkOrderComment', backref='work_order', lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<WorkOrder {self.work_order_number}>'
@@ -145,15 +164,21 @@ class WorkOrder(db.Model):
             'equipment_id': self.equipment_id,
             'equipment_name': self.equipment.name if self.equipment else None,
             'assigned_technician_id': self.assigned_technician_id,
-            'assigned_technician': f"{self.assigned_technician.first_name} {self.assigned_technician.last_name}" if self.assigned_technician else None,
+            'assigned_technician_name': f"{self.assigned_technician.first_name} {self.assigned_technician.last_name}" if self.assigned_technician else None,
+            'assigned_team_id': self.assigned_team_id,
+            'assigned_team_name': self.assigned_team.name if self.assigned_team else None,
             'created_by_id': self.created_by_id,
-            'created_by': f"{self.created_by.first_name} {self.created_by.last_name}" if self.created_by else None,
+            'created_by_name': f"{self.created_by.first_name} {self.created_by.last_name}" if self.created_by else None,
             'scheduled_date': self.scheduled_date.isoformat() if self.scheduled_date else None,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
             'estimated_duration': self.estimated_duration,
             'actual_duration': self.actual_duration,
             'actual_start_time': self.actual_start_time.isoformat() if self.actual_start_time else None,
             'actual_end_time': self.actual_end_time.isoformat() if self.actual_end_time else None,
             'completion_notes': self.completion_notes,
+            'images': self.images,
+            'videos': self.videos,
+            'voice_notes': self.voice_notes,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
@@ -171,8 +196,14 @@ class MaintenanceSchedule(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_performed = db.Column(db.DateTime)
     next_due = db.Column(db.DateTime)
+    sop_id = db.Column(db.Integer, db.ForeignKey('sops.id'))  # Link to SOP
+    assigned_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))  # Assign to team
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    sop = db.relationship('SOP', backref='maintenance_schedules')
+    assigned_team = db.relationship('Team', backref='assigned_maintenance_schedules')
     
     def __repr__(self):
         return f'<MaintenanceSchedule {self.equipment.name if self.equipment else "Unknown"}>'
@@ -190,8 +221,116 @@ class MaintenanceSchedule(db.Model):
             'is_active': self.is_active,
             'last_performed': self.last_performed.isoformat() if self.last_performed else None,
             'next_due': self.next_due.isoformat() if self.next_due else None,
+            'sop_id': self.sop_id,
+            'sop_name': self.sop.name if self.sop else None,
+            'assigned_team_id': self.assigned_team_id,
+            'assigned_team_name': self.assigned_team.name if self.assigned_team else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+class SOP(db.Model):
+    __tablename__ = 'sops'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(100))  # PM, Safety, Operation, etc.
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'))
+    estimated_duration = db.Column(db.Integer)  # in minutes
+    safety_notes = db.Column(db.Text)
+    required_tools = db.Column(db.Text)
+    required_parts = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    equipment = db.relationship('Equipment', backref='sops')
+    created_by = db.relationship('User', backref='created_sops')
+    checklist_items = db.relationship('SOPChecklistItem', backref='sop', lazy=True, cascade='all, delete-orphan', order_by='SOPChecklistItem.order')
+    
+    def __repr__(self):
+        return f'<SOP {self.name}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'category': self.category,
+            'equipment_id': self.equipment_id,
+            'equipment_name': self.equipment.name if self.equipment else None,
+            'estimated_duration': self.estimated_duration,
+            'safety_notes': self.safety_notes,
+            'required_tools': self.required_tools,
+            'required_parts': self.required_parts,
+            'is_active': self.is_active,
+            'created_by_id': self.created_by_id,
+            'created_by_name': f"{self.created_by.first_name} {self.created_by.last_name}" if self.created_by else None,
+            'checklist_items': [item.to_dict() for item in self.checklist_items],
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class SOPChecklistItem(db.Model):
+    __tablename__ = 'sop_checklist_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sop_id = db.Column(db.Integer, db.ForeignKey('sops.id'), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    is_required = db.Column(db.Boolean, default=True)
+    expected_result = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SOPChecklistItem {self.description[:50]}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sop_id': self.sop_id,
+            'description': self.description,
+            'order': self.order,
+            'is_required': self.is_required,
+            'expected_result': self.expected_result,
+            'created_at': self.created_at.isoformat()
+        }
+
+class WorkOrderChecklist(db.Model):
+    __tablename__ = 'work_order_checklists'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    work_order_id = db.Column(db.Integer, db.ForeignKey('work_orders.id'), nullable=False)
+    sop_checklist_item_id = db.Column(db.Integer, db.ForeignKey('sop_checklist_items.id'), nullable=False)
+    is_completed = db.Column(db.Boolean, default=False)
+    completed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    completed_at = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    work_order = db.relationship('WorkOrder', backref='checklist_items')
+    sop_checklist_item = db.relationship('SOPChecklistItem', backref='work_order_checklists')
+    completed_by = db.relationship('User', backref='completed_checklist_items')
+    
+    def __repr__(self):
+        return f'<WorkOrderChecklist {self.sop_checklist_item.description[:50] if self.sop_checklist_item else "Unknown"}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'work_order_id': self.work_order_id,
+            'sop_checklist_item_id': self.sop_checklist_item_id,
+            'description': self.sop_checklist_item.description if self.sop_checklist_item else None,
+            'is_completed': self.is_completed,
+            'completed_by_id': self.completed_by_id,
+            'completed_by_name': f"{self.completed_by.first_name} {self.completed_by.last_name}" if self.completed_by else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat()
         }
 
 class Inventory(db.Model):
@@ -235,6 +374,37 @@ class Inventory(db.Model):
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+class WorkOrderComment(db.Model):
+    __tablename__ = 'work_order_comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    work_order_id = db.Column(db.Integer, db.ForeignKey('work_orders.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    comment = db.Column(db.Text, nullable=False)
+    images = db.Column(db.Text)  # Store image file paths as JSON
+    videos = db.Column(db.Text)  # Store video file paths as JSON
+    voice_notes = db.Column(db.Text)  # Store voice note file paths as JSON
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='work_order_comments')
+    
+    def __repr__(self):
+        return f'<WorkOrderComment {self.id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'work_order_id': self.work_order_id,
+            'user_id': self.user_id,
+            'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else None,
+            'comment': self.comment,
+            'images': self.images,
+            'videos': self.videos,
+            'voice_notes': self.voice_notes,
+            'created_at': self.created_at.isoformat()
         }
 
 class WorkOrderPart(db.Model):

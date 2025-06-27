@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Complete Task - CMMS Mobile</title>
+    <meta name="theme-color" content="#28a745">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+        
+        .header-info h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .header-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 20px 15px;
+        }
+        
+        .task-summary {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #28a745;
+        }
+        
+        .task-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .task-details {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .completion-form {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+        }
+        
+        .form-section h6 {
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.25);
+        }
+        
+        .photo-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .photo-upload-area:hover {
+            border-color: #28a745;
+            background: #f0f8f0;
+        }
+        
+        .photo-upload-area.dragover {
+            border-color: #28a745;
+            background: #e8f5e8;
+        }
+        
+        .upload-icon {
+            font-size: 2rem;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .upload-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .upload-btn:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+        
+        .photo-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-remove {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .submit-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .btn-complete {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-complete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40,167,69,0.3);
+        }
+        
+        .btn-complete:disabled {
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .camera-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: 10px;
+            transition: all 0.3s;
+        }
+        
+        .camera-btn:hover {
+            background: #0056b3;
+        }
+        
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px 10px;
+            }
+            
+            .task-summary, .completion-form {
+                padding: 15px;
+            }
+            
+            .photo-preview {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="header-content">
+            <a href="{{ url_for('mobile_task_detail', work_order_id=work_order.id) }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="header-info">
+                <h5>Complete Task</h5>
+                <p>#{{ work_order.work_order_number }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Task Summary -->
+        <div class="task-summary">
+            <div class="task-title">{{ work_order.title }}</div>
+            <div class="task-details">
+                <i class="fas fa-cogs me-2"></i>{{ work_order.equipment.name if work_order.equipment else 'No Equipment' }}
+                {% if work_order.estimated_duration %}
+                <br><i class="fas fa-clock me-2"></i>Estimated: {{ work_order.estimated_duration }} minutes
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Completion Form -->
+        <form method="POST" enctype="multipart/form-data" id="completionForm">
+            <div class="completion-form">
+                <!-- Completion Notes -->
+                <div class="form-section">
+                    <h6><i class="fas fa-edit"></i>Completion Notes</h6>
+                    <textarea class="form-control" name="completion_notes" rows="4" 
+                              placeholder="Describe what was completed, any issues encountered, or additional notes..."></textarea>
+                </div>
+                
+                <!-- Photo Upload -->
+                <div class="form-section">
+                    <h6><i class="fas fa-camera"></i>Proof Photos</h6>
+                    <p class="text-muted mb-3">Upload photos showing the completed work</p>
+                    
+                    <div class="photo-upload-area" onclick="document.getElementById('photoUpload').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-text">
+                            <strong>Tap to upload photos</strong><br>
+                            or drag and drop files here
+                        </div>
+                        <button type="button" class="upload-btn">
+                            <i class="fas fa-upload me-2"></i>Choose Files
+                        </button>
+                        <button type="button" class="camera-btn" onclick="openCamera()">
+                            <i class="fas fa-camera me-2"></i>Take Photo
+                        </button>
+                    </div>
+                    
+                    <input type="file" id="photoUpload" name="proof_images" multiple accept="image/*" 
+                           style="display: none;" onchange="handlePhotoUpload(this)">
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="uploadProgress"></div>
+                    </div>
+                    
+                    <div class="photo-preview" id="photoPreview"></div>
+                </div>
+                
+                <!-- Submit Section -->
+                <div class="submit-section">
+                    <button type="submit" class="btn-complete" id="submitBtn">
+                        <i class="fas fa-check me-2"></i>Complete Task
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let uploadedPhotos = [];
+        
+        // Handle photo upload
+        function handlePhotoUpload(input) {
+            const files = Array.from(input.files);
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        addPhotoPreview(e.target.result, file.name);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Add photo preview
+        function addPhotoPreview(src, filename) {
+            const preview = document.getElementById('photoPreview');
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `
+                <img src="${src}" alt="Preview">
+                <button type="button" class="photo-remove" onclick="removePhoto(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            preview.appendChild(photoItem);
+            uploadedPhotos.push({ src, filename });
+        }
+        
+        // Remove photo
+        function removePhoto(button) {
+            const photoItem = button.parentElement;
+            const index = Array.from(photoItem.parentElement.children).indexOf(photoItem);
+            uploadedPhotos.splice(index, 1);
+            photoItem.remove();
+        }
+        
+        // Open camera
+        function openCamera() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment';
+            input.onchange = function(e) {
+                if (e.target.files.length > 0) {
+                    handlePhotoUpload(e.target);
+                }
+            };
+            input.click();
+        }
+        
+        // Drag and drop functionality
+        const uploadArea = document.querySelector('.photo-upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        addPhotoPreview(e.target.result, file.name);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+        
+        // Form submission
+        document.getElementById('completionForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Completing Task...';
+            
+            // Show progress
+            const progress = document.getElementById('uploadProgress');
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 90) {
+                    clearInterval(interval);
+                } else {
+                    width += 10;
+                    progress.style.width = width + '%';
+                }
+            }, 200);
+        });
+        
+        // Auto-save draft notes
+        const notesTextarea = document.querySelector('textarea[name="completion_notes"]');
+        notesTextarea.addEventListener('input', function() {
+            localStorage.setItem('task_completion_notes', this.value);
+        });
+        
+        // Load saved notes
+        window.addEventListener('load', function() {
+            const savedNotes = localStorage.getItem('task_completion_notes');
+            if (savedNotes) {
+                notesTextarea.value = savedNotes;
+            }
+        });
+        
+        // Clear saved notes on successful submission
+        document.getElementById('completionForm').addEventListener('submit', function() {
+            localStorage.removeItem('task_completion_notes');
+        });
+    </script>
+</body>
+</html> 

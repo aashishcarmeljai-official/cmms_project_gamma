@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}Work Order Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Work Order Management</h1>
+            <p class="text-muted">Manage and monitor all work orders</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('work_order_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Work Order
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Advanced Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-2">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ filters.search }}" placeholder="Title, description, WO#">
+                </div>
+                <div class="col-md-2">
+                    <label for="status_filter" class="form-label">Status</label>
+                    <select class="form-select" id="status_filter" name="status">
+                        <option value="all" {{ 'selected' if filters.status == 'all' }}>All Status</option>
+                        <option value="open" {{ 'selected' if filters.status == 'open' }}>Open</option>
+                        <option value="in_progress" {{ 'selected' if filters.status == 'in_progress' }}>In Progress</option>
+                        <option value="completed" {{ 'selected' if filters.status == 'completed' }}>Completed</option>
+                        <option value="cancelled" {{ 'selected' if filters.status == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="priority_filter" class="form-label">Priority</label>
+                    <select class="form-select" id="priority_filter" name="priority">
+                        <option value="all" {{ 'selected' if filters.priority == 'all' }}>All Priorities</option>
+                        <option value="urgent" {{ 'selected' if filters.priority == 'urgent' }}>Urgent</option>
+                        <option value="high" {{ 'selected' if filters.priority == 'high' }}>High</option>
+                        <option value="medium" {{ 'selected' if filters.priority == 'medium' }}>Medium</option>
+                        <option value="low" {{ 'selected' if filters.priority == 'low' }}>Low</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="equipment_filter" class="form-label">Equipment</label>
+                    <select class="form-select" id="equipment_filter" name="equipment_id">
+                        <option value="all" {{ 'selected' if filters.equipment_id == 'all' }}>All Equipment</option>
+                        {% for equipment in equipment_list %}
+                        <option value="{{ equipment.id }}" {{ 'selected' if filters.equipment_id == equipment.id|string }}>{{ equipment.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="technician_filter" class="form-label">Technician</label>
+                    <select class="form-select" id="technician_filter" name="technician_id">
+                        <option value="all" {{ 'selected' if filters.technician_id == 'all' }}>All Technicians</option>
+                        {% for technician in technicians %}
+                        <option value="{{ technician.id }}" {{ 'selected' if filters.technician_id == technician.id|string }}>{{ technician.first_name }} {{ technician.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="type_filter" class="form-label">Type</label>
+                    <select class="form-select" id="type_filter" name="type">
+                        <option value="all" {{ 'selected' if filters.type == 'all' }}>All Types</option>
+                        <option value="preventive" {{ 'selected' if filters.type == 'preventive' }}>Preventive</option>
+                        <option value="corrective" {{ 'selected' if filters.type == 'corrective' }}>Corrective</option>
+                        <option value="emergency" {{ 'selected' if filters.type == 'emergency' }}>Emergency</option>
+                        <option value="inspection" {{ 'selected' if filters.type == 'inspection' }}>Inspection</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Bulk Actions</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <form method="POST" action="{{ url_for('admin_bulk_assign') }}" class="d-flex">
+                        <select class="form-select me-2" name="technician_id" required>
+                            <option value="">Select Technician</option>
+                            {% for technician in technicians %}
+                            <option value="{{ technician.id }}">{{ technician.first_name }} {{ technician.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-outline-primary" onclick="return confirmBulkAction('assign')">
+                            <i class="fas fa-user-plus me-1"></i>Assign
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <form method="POST" action="{{ url_for('admin_bulk_status') }}" class="d-flex">
+                        <select class="form-select me-2" name="new_status" required>
+                            <option value="">Select Status</option>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-outline-warning" onclick="return confirmBulkAction('status')">
+                            <i class="fas fa-edit me-1"></i>Update Status
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-outline-info" onclick="exportSelectedWorkOrders()">
+                        <i class="fas fa-download me-1"></i>Export Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Orders Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Work Orders ({{ work_orders|length }} total)</h6>
+        </div>
+        <div class="card-body">
+            {% if work_orders %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Work Order</th>
+                            <th>Equipment</th>
+                            <th>Assigned To</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for work_order in work_orders %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="work-order-checkbox" value="{{ work_order.id }}">
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ work_order.title }}</div>
+                                    <div class="text-muted">{{ work_order.work_order_number }}</div>
+                                    <small class="text-muted">{{ work_order.type.title() if work_order.type else 'N/A' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if work_order.equipment %}
+                                <div>
+                                    <div class="fw-bold">{{ work_order.equipment.name }}</div>
+                                    <small class="text-muted">{{ work_order.equipment.location if work_order.equipment.location else 'N/A' }}</small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if work_order.assigned_technician %}
+                                <div>
+                                    <div class="fw-bold">{{ work_order.assigned_technician.first_name }} {{ work_order.assigned_technician.last_name }}</div>
+                                    <small class="text-muted">{{ work_order.assigned_technician.role.title() }}</small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if work_order.priority == 'urgent' else 'warning' if work_order.priority == 'high' else 'info' if work_order.priority == 'medium' else 'success' }}">
+                                    {{ work_order.priority.title() if work_order.priority else 'N/A' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'secondary' if work_order.status == 'open' else 'primary' if work_order.status == 'in_progress' else 'success' if work_order.status == 'completed' else 'danger' }}">
+                                    {{ work_order.status.replace('_', ' ').title() if work_order.status else 'N/A' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if work_order.due_date %}
+                                    <div class="{{ 'text-danger' if work_order.due_date < now and work_order.status != 'completed' else '' }}">
+                                        {{ work_order.due_date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    <small class="text-muted">{{ work_order.due_date.strftime('%H:%M') }}</small>
+                                {% else %}
+                                    <span class="text-muted">No due date</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ work_order.created_at.strftime('%Y-%m-%d') }}</div>
+                                <small class="text-muted">{{ work_order.created_at.strftime('%H:%M') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{{ url_for('work_order_detail', id=work_order.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-outline-warning btn-sm" 
+                                            onclick="quickStatusUpdate({{ work_order.id }})" title="Quick Status Update">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" 
+                                            onclick="reassignWorkOrder({{ work_order.id }})" title="Reassign">
+                                        <i class="fas fa-user-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No work orders found</h5>
+                <p class="text-muted">Try adjusting your search criteria or create a new work order.</p>
+                <a href="{{ url_for('work_order_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create First Work Order
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Work Order Statistics -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                Open
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ work_orders|selectattr('status', 'equalto', 'open')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-folder-open fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                In Progress
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ work_orders|selectattr('status', 'equalto', 'in_progress')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-spinner fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Completed
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ work_orders|selectattr('status', 'equalto', 'completed')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Overdue
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ work_orders
+                                    |rejectattr('due_date', 'none')
+                                    |selectattr('status', 'ne', 'completed')
+                                    |selectattr('due_date', 'lt', now)
+                                    |list
+                                    |length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Status Update Modal -->
+<div class="modal fade" id="quickStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Status Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="quickStatusForm">
+                <div class="modal-body">
+                    <input type="hidden" id="work_order_id" name="work_order_id">
+                    <div class="mb-3">
+                        <label for="new_status" class="form-label">New Status</label>
+                        <select class="form-select" id="new_status" name="new_status" required>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reassign Work Order Modal -->
+<div class="modal fade" id="reassignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reassign Work Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="reassignForm">
+                <div class="modal-body">
+                    <input type="hidden" id="reassign_work_order_id" name="work_order_id">
+                    <div class="mb-3">
+                        <label for="new_technician" class="form-label">Assign to Technician</label>
+                        <select class="form-select" id="new_technician" name="technician_id" required>
+                            <option value="">Select Technician</option>
+                            {% for technician in technicians %}
+                            <option value="{{ technician.id }}">{{ technician.first_name }} {{ technician.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reassign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.work-order-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function confirmBulkAction(action) {
+    const selectedWorkOrders = document.querySelectorAll('.work-order-checkbox:checked');
+    
+    if (selectedWorkOrders.length === 0) {
+        alert('Please select at least one work order.');
+        return false;
+    }
+    
+    return confirm(`Are you sure you want to ${action} ${selectedWorkOrders.length} work order(s)?`);
+}
+
+function quickStatusUpdate(workOrderId) {
+    document.getElementById('work_order_id').value = workOrderId;
+    document.getElementById('quickStatusForm').action = `/work-orders/${workOrderId}/update-status`;
+    new bootstrap.Modal(document.getElementById('quickStatusModal')).show();
+}
+
+function reassignWorkOrder(workOrderId) {
+    document.getElementById('reassign_work_order_id').value = workOrderId;
+    document.getElementById('reassignForm').action = `/work-orders/${workOrderId}/reassign`;
+    new bootstrap.Modal(document.getElementById('reassignModal')).show();
+}
+
+function exportSelectedWorkOrders() {
+    const selectedWorkOrders = document.querySelectorAll('.work-order-checkbox:checked');
+    
+    if (selectedWorkOrders.length === 0) {
+        alert('Please select at least one work order to export.');
+        return;
+    }
+    
+    const workOrderIds = Array.from(selectedWorkOrders).map(cb => cb.value);
+    const url = `/reports/export/csv?work_order_ids=${workOrderIds.join(',')}`;
+    window.open(url, '_blank');
+}
+</script>
+{% endblock %} 

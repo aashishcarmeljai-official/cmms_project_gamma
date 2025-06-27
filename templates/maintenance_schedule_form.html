@@ -1,36 +1,70 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Edit' if action == 'edit' else 'New' }} Maintenance Schedule{% endblock %}
 {% block content %}
-<div class="container mt-5" style="max-width: 600px;">
+<div class="container mt-5" style="max-width: 800px;">
     <div class="card shadow">
         <div class="card-body">
             <h3 class="card-title mb-4">{{ 'Edit' if action == 'edit' else 'New' }} Maintenance Schedule for <span class="text-primary">{{ equipment.name }}</span></h3>
             <form method="POST">
                 {{ form.hidden_tag() }}
-                <div class="mb-3">
-                    {{ form.frequency.label(class="form-label") }}
-                    {{ form.frequency(class="form-select") }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.frequency.label(class="form-label") }}
+                            {{ form.frequency(class="form-select") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.frequency_value.label(class="form-label") }}
+                            {{ form.frequency_value(class="form-control") }}
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    {{ form.frequency_value.label(class="form-label") }}
-                    {{ form.frequency_value(class="form-control") }}
-                </div>
+                
                 <div class="mb-3">
                     {{ form.description.label(class="form-label") }}
                     {{ form.description(class="form-control", rows=3) }}
                 </div>
-                <div class="mb-3">
-                    {{ form.estimated_duration.label(class="form-label") }}
-                    {{ form.estimated_duration(class="form-control") }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.estimated_duration.label(class="form-label") }}
+                            {{ form.estimated_duration(class="form-control", placeholder="in minutes") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.next_due.label(class="form-label") }}
+                            {{ form.next_due(class="form-control", type="datetime-local") }}
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    {{ form.next_due.label(class="form-label") }}
-                    {{ form.next_due(class="form-control", type="datetime-local") }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.sop_id.label(class="form-label") }}
+                            {{ form.sop_id(class="form-select") }}
+                            <small class="form-text text-muted">Select a Standard Operating Procedure (optional)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.assigned_team_id.label(class="form-label") }}
+                            {{ form.assigned_team_id(class="form-select") }}
+                            <small class="form-text text-muted">Assign to a team (optional)</small>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="form-check mb-3">
                     {{ form.is_active(class="form-check-input") }}
                     {{ form.is_active.label(class="form-check-label") }}
                 </div>
+                
                 <div class="d-grid">
                     {{ form.submit(class="btn btn-primary") }}
                 </div>
@@ -41,4 +75,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

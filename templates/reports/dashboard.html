@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Reports Dashboard - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Reports & Analytics</h1>
+            <p class="text-muted">Comprehensive reporting and compliance data</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('export_csv') }}" class="btn btn-outline-primary">
+                <i class="fas fa-download me-2"></i>Export CSV
+            </a>
+            <a href="{{ url_for('export_compliance_report') }}" class="btn btn-outline-success">
+                <i class="fas fa-file-alt me-2"></i>Compliance Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Work Orders
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_work_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Completed Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_work_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Completion Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(completion_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On-Time Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(on_time_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('task_logs') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-list me-2"></i>Task Logs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('performance_metrics') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-chart-line me-2"></i>Performance Metrics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('equipment_analytics') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-cogs me-2"></i>Equipment Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('export_compliance_report') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-file-certificate me-2"></i>Compliance Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Equipment Performance -->
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Work Order</th>
+                                    <th>Equipment</th>
+                                    <th>Status</th>
+                                    <th>Assigned To</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for work_order in recent_work_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('work_order_detail', id=work_order.id) }}">
+                                            {{ work_order.work_order_number }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ work_order.title }}</small>
+                                    </td>
+                                    <td>{{ work_order.equipment.name if work_order.equipment else 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'secondary' }}">
+                                            {{ work_order.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if work_order.assigned_technician %}
+                                            {{ work_order.assigned_technician.first_name }} {{ work_order.assigned_technician.last_name }}
+                                        {% else %}
+                                            Unassigned
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ work_order.created_at.strftime('%Y-%m-%d') if work_order.created_at else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Performance -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Equipment Performance</h6>
+                </div>
+                <div class="card-body">
+                    {% if equipment_stats %}
+                        {% for stat in equipment_stats %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ stat.name }}</h6>
+                                    <small class="text-muted">{{ stat.total_tasks }} tasks</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h6 mb-0">{{ "%.1f"|format(stat.avg_duration or 0) }} min</div>
+                                    <small class="text-muted">avg duration</small>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ (stat.total_tasks / 10 * 100) if stat.total_tasks > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No equipment data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compliance Summary -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Compliance Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Key Performance Indicators</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Completion Rate:</strong> {{ "%.1f"|format(completion_rate) }}%
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    <strong>On-Time Rate:</strong> {{ "%.1f"|format(on_time_rate) }}%
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-tasks text-info me-2"></i>
+                                    <strong>Total Work Orders:</strong> {{ total_work_orders }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Completed Tasks:</strong> {{ completed_work_orders }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Export Options</h5>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('export_csv') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-download me-2"></i>Download Task Logs (CSV)
+                                </a>
+                                <a href="{{ url_for('export_compliance_report') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-file-alt me-2"></i>Generate Compliance Report
+                                </a>
+                                <a href="{{ url_for('performance_metrics') }}" class="btn btn-outline-info">
+                                    <i class="fas fa-chart-bar me-2"></i>View Detailed Metrics
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for future enhancements -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Future: Add interactive charts here
+    console.log('Reports dashboard loaded');
+</script>
+{% endblock %} 

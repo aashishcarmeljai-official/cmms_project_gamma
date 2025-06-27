@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block title %}{{ sop.name }} - SOP Details{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ sop.name }}</h2>
+            <p class="text-muted mb-0">
+                <span class="badge bg-{{ 'success' if sop.is_active else 'secondary' }} me-2">
+                    {{ 'Active' if sop.is_active else 'Inactive' }}
+                </span>
+                <span class="badge bg-info me-2">{{ sop.category }}</span>
+                {% if sop.equipment %}
+                <span class="badge bg-primary">{{ sop.equipment.name }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('sop_edit', id=sop.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <button type="button" class="btn btn-outline-danger" 
+                    onclick="confirmDelete('{{ sop.name }}', '{{ url_for('sop_delete', id=sop.id) }}')">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- SOP Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Description</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ sop.description }}</p>
+                </div>
+            </div>
+
+            <!-- Checklist Items -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> Checklist Items</h5>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addChecklistModal">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if sop.checklist_items %}
+                    <div class="list-group list-group-flush">
+                        {% for item in sop.checklist_items %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">
+                                    {{ item.order }}. {{ item.description }}
+                                    {% if not item.is_required %}
+                                    <span class="badge bg-warning text-dark ms-2">Optional</span>
+                                    {% endif %}
+                                </div>
+                                {% if item.expected_result %}
+                                <small class="text-muted">Expected: {{ item.expected_result }}</small>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('sop_delete_checklist_item', id=sop.id, item_id=item.id) }}" 
+                                  style="display: inline;" onsubmit="return confirm('Delete this checklist item?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No checklist items defined yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- SOP Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-cog"></i> SOP Information</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Duration:</dt>
+                        <dd class="col-sm-8">{{ sop.estimated_duration or 'N/A' }} min</dd>
+                        
+                        <dt class="col-sm-4">Created by:</dt>
+                        <dd class="col-sm-8">{{ sop.created_by.first_name }} {{ sop.created_by.last_name }}</dd>
+                        
+                        <dt class="col-sm-4">Created:</dt>
+                        <dd class="col-sm-8">{{ sop.created_at.strftime('%Y-%m-%d') }}</dd>
+                        
+                        <dt class="col-sm-4">Updated:</dt>
+                        <dd class="col-sm-8">{{ sop.updated_at.strftime('%Y-%m-%d') }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Safety Notes -->
+            {% if sop.safety_notes %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Safety Notes</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ sop.safety_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Required Tools -->
+            {% if sop.required_tools %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tools"></i> Required Tools</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ sop.required_tools }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Required Parts -->
+            {% if sop.required_parts %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-boxes"></i> Required Parts</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ sop.required_parts }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Back to SOPs -->
+    <div class="mt-4">
+        <a href="{{ url_for('sops_list') }}" class="btn btn-link">
+            <i class="fas fa-arrow-left"></i> Back to SOPs
+        </a>
+    </div>
+</div>
+
+<!-- Add Checklist Item Modal -->
+<div class="modal fade" id="addChecklistModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Checklist Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('sop_add_checklist_item', id=sop.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Order *</label>
+                        <input type="number" class="form-control" id="order" name="order" 
+                               value="{{ sop.checklist_items|length + 1 }}" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expected_result" class="form-label">Expected Result</label>
+                        <textarea class="form-control" id="expected_result" name="expected_result" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="is_required" name="is_required" checked>
+                        <label class="form-check-label" for="is_required">
+                            Required item
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the SOP "<span id="sopName"></span>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(sopName, deleteUrl) {
+    document.getElementById('sopName').textContent = sopName;
+    document.getElementById('deleteForm').action = deleteUrl;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %} 

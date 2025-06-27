@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Analytics - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Equipment Analytics</h1>
+            <p class="text-muted">Performance metrics and analytics by equipment</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Equipment Performance Overview -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Equipment Performance Overview</h6>
+        </div>
+        <div class="card-body">
+            {% if equipment_stats %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Equipment</th>
+                            <th>Location</th>
+                            <th>Total Tasks</th>
+                            <th>Completed</th>
+                            <th>On-Time</th>
+                            <th>Completion Rate</th>
+                            <th>On-Time Rate</th>
+                            <th>Performance Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in equipment_stats %}
+                        <tr>
+                            <td>
+                                <div><strong>{{ stat.equipment.name }}</strong></div>
+                                <small class="text-muted">{{ stat.equipment.model if stat.equipment.model else 'No model' }}</small>
+                            </td>
+                            <td>{{ stat.equipment.location if stat.equipment.location else 'No location' }}</td>
+                            <td>{{ stat.total_tasks }}</td>
+                            <td>{{ stat.completed_tasks }}</td>
+                            <td>{{ stat.on_time_tasks }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ stat.completion_rate }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format(stat.completion_rate) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ stat.on_time_rate }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format(stat.on_time_rate) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% set score = stat.completion_rate * 0.6 + stat.on_time_rate * 0.4 %}
+                                <span class="badge bg-{{ 'success' if score >= 80 else 'warning' if score >= 60 else 'danger' }}">
+                                    {{ "%.1f"|format(score) }}%
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('equipment_analytics', equipment_id=stat.equipment.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-chart-line me-1"></i>Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No equipment data available</h5>
+                <p class="text-muted">Add equipment and work orders to see performance analytics.</p>
+                <a href="{{ url_for('new_equipment') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Equipment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Performance Summary Cards -->
+    {% if equipment_stats %}
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Equipment
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ equipment_stats|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cogs fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Avg Completion Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ "%.1f"|format(equipment_stats|map(attribute='completion_rate')|sum / equipment_stats|length) }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Avg On-Time Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ "%.1f"|format(equipment_stats|map(attribute='on_time_rate')|sum / equipment_stats|length) }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ equipment_stats|map(attribute='total_tasks')|sum }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performers -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Performing Equipment</h6>
+                </div>
+                <div class="card-body">
+                    {% set top_performers = equipment_stats|sort(attribute='completion_rate', reverse=true)[:5] %}
+                    {% for stat in top_performers %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-0">{{ stat.equipment.name }}</h6>
+                            <small class="text-muted">{{ stat.equipment.location if stat.equipment.location else 'No location' }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="h6 mb-0 text-success">{{ "%.1f"|format(stat.completion_rate) }}%</div>
+                            <small class="text-muted">{{ stat.completed_tasks }}/{{ stat.total_tasks }} tasks</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Equipment Needing Attention</h6>
+                </div>
+                <div class="card-body">
+                    {% set low_performers = equipment_stats|selectattr('completion_rate', '<', 70)|sort(attribute='completion_rate')[:5] %}
+                    {% if low_performers|list %}
+                        {% for stat in low_performers %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">{{ stat.equipment.name }}</h6>
+                                <small class="text-muted">{{ stat.equipment.location if stat.equipment.location else 'No location' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="h6 mb-0 text-danger">{{ "%.1f"|format(stat.completion_rate) }}%</div>
+                                <small class="text-muted">{{ stat.completed_tasks }}/{{ stat.total_tasks }} tasks</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">All equipment performing well!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Add sorting functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const table = document.querySelector('table');
+        if (table) {
+            const headers = table.querySelectorAll('th');
+            headers.forEach((header, index) => {
+                if (index < headers.length - 1) { // Exclude the Actions column
+                    header.style.cursor = 'pointer';
+                    header.addEventListener('click', () => sortTable(index));
+                }
+            });
+        }
+    });
+
+    function sortTable(columnIndex) {
+        const table = document.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const aValue = a.cells[columnIndex].textContent.trim();
+            const bValue = b.cells[columnIndex].textContent.trim();
+            
+            // Try to parse as numbers first
+            const aNum = parseFloat(aValue);
+            const bNum = parseFloat(bValue);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return bNum - aNum; // Sort numbers in descending order
+            }
+            
+            // Sort strings alphabetically
+            return aValue.localeCompare(bValue);
+        });
+        
+        // Reorder the rows
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+{% endblock %} 

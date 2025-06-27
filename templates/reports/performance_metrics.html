@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Metrics - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Performance Metrics</h1>
+            <p class="text-muted">Detailed analytics and performance indicators</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('export_compliance_report') }}" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Export Report
+            </a>
+            <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Period Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Time Period</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="period" class="form-label">Analysis Period</label>
+                    <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                        <option value="7" {{ 'selected' if period == '7' }}>Last 7 Days</option>
+                        <option value="30" {{ 'selected' if period == '30' }}>Last 30 Days</option>
+                        <option value="90" {{ 'selected' if period == '90' }}>Last 90 Days</option>
+                        <option value="180" {{ 'selected' if period == '180' }}>Last 6 Months</option>
+                        <option value="365" {{ 'selected' if period == '365' }}>Last Year</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tasks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Completed Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_tasks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Completion Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(completion_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On-Time Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(on_time_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row mb-4">
+        <!-- Completion Rate Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Completion Rate</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="completionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- On-Time Performance Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">On-Time Performance</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="onTimeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment Performance -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Equipment Performance</h6>
+        </div>
+        <div class="card-body">
+            {% if equipment_performance %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Equipment</th>
+                            <th>Total Tasks</th>
+                            <th>Completed</th>
+                            <th>On-Time</th>
+                            <th>Completion Rate</th>
+                            <th>On-Time Rate</th>
+                            <th>Performance Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipment, stats in equipment_performance.items() %}
+                        <tr>
+                            <td><strong>{{ equipment }}</strong></td>
+                            <td>{{ stats.total }}</td>
+                            <td>{{ stats.completed }}</td>
+                            <td>{{ stats.on_time }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ (stats.completed / stats.total * 100) if stats.total > 0 else 0 }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format((stats.completed / stats.total * 100) if stats.total > 0 else 0) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ (stats.on_time / stats.completed * 100) if stats.completed > 0 else 0 }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format((stats.on_time / stats.completed * 100) if stats.completed > 0 else 0) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% set score = ((stats.completed / stats.total * 100) if stats.total > 0 else 0) * 0.6 + ((stats.on_time / stats.completed * 100) if stats.completed > 0 else 0) * 0.4 %}
+                                <span class="badge bg-{{ 'success' if score >= 80 else 'warning' if score >= 60 else 'danger' }}">
+                                    {{ "%.1f"|format(score) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No equipment performance data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Technician Performance -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Technician Performance</h6>
+        </div>
+        <div class="card-body">
+            {% if technician_performance %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Technician</th>
+                            <th>Total Tasks</th>
+                            <th>Completed</th>
+                            <th>On-Time</th>
+                            <th>Completion Rate</th>
+                            <th>On-Time Rate</th>
+                            <th>Performance Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for technician, stats in technician_performance.items() %}
+                        <tr>
+                            <td><strong>{{ technician }}</strong></td>
+                            <td>{{ stats.total }}</td>
+                            <td>{{ stats.completed }}</td>
+                            <td>{{ stats.on_time }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ (stats.completed / stats.total * 100) if stats.total > 0 else 0 }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format((stats.completed / stats.total * 100) if stats.total > 0 else 0) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ (stats.on_time / stats.completed * 100) if stats.completed > 0 else 0 }}%"></div>
+                                    </div>
+                                    <span>{{ "%.1f"|format((stats.on_time / stats.completed * 100) if stats.completed > 0 else 0) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% set score = ((stats.completed / stats.total * 100) if stats.total > 0 else 0) * 0.6 + ((stats.on_time / stats.completed * 100) if stats.completed > 0 else 0) * 0.4 %}
+                                <span class="badge bg-{{ 'success' if score >= 80 else 'warning' if score >= 60 else 'danger' }}">
+                                    {{ "%.1f"|format(score) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No technician performance data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Priority Breakdown -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Priority Breakdown</h6>
+        </div>
+        <div class="card-body">
+            {% if priority_breakdown %}
+            <div class="row">
+                {% for priority, stats in priority_breakdown.items() %}
+                <div class="col-md-3 mb-3">
+                    <div class="card border-left-{{ 'danger' if priority == 'urgent' else 'warning' if priority == 'high' else 'info' if priority == 'medium' else 'success' }} shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-{{ 'danger' if priority == 'urgent' else 'warning' if priority == 'high' else 'info' if priority == 'medium' else 'success' }} text-uppercase mb-1">
+                                        {{ priority.title() }} Priority
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total }}</div>
+                                    <div class="text-xs text-muted">
+                                        {{ stats.completed }} completed ({{ "%.1f"|format((stats.completed / stats.total * 100) if stats.total > 0 else 0) }}%)
+                                    </div>
+                                    <div class="text-xs text-muted">
+                                        {{ stats.on_time }} on-time ({{ "%.1f"|format((stats.on_time / stats.completed * 100) if stats.completed > 0 else 0) }}%)
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if priority == 'urgent' else 'exclamation' if priority == 'high' else 'info-circle' if priority == 'medium' else 'check' }} fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No priority breakdown data available</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Completion Rate Chart
+    const completionCtx = document.getElementById('completionChart').getContext('2d');
+    new Chart(completionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Pending'],
+            datasets: [{
+                data: [{{ completed_tasks }}, {{ total_tasks - completed_tasks }}],
+                backgroundColor: ['#28a745', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // On-Time Performance Chart
+    const onTimeCtx = document.getElementById('onTimeChart').getContext('2d');
+    new Chart(onTimeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['On Time', 'Late'],
+            datasets: [{
+                data: [{{ on_time_tasks }}, {{ completed_tasks - on_time_tasks }}],
+                backgroundColor: ['#ffc107', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CMMS Mobile - Dashboard</title>
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CMMS Mobile">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 20px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-info h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .user-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .stats-container {
+            padding: 20px 15px;
+            background: white;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .tasks-section {
+            padding: 0 15px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+            transition: all 0.3s;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .task-card.urgent {
+            border-left-color: #dc3545;
+        }
+        
+        .task-card.high {
+            border-left-color: #fd7e14;
+        }
+        
+        .task-card.medium {
+            border-left-color: #ffc107;
+        }
+        
+        .task-card.low {
+            border-left-color: #28a745;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .task-title {
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            font-size: 1rem;
+        }
+        
+        .task-priority {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-urgent {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .priority-high {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .priority-medium {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .priority-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .task-details {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .task-equipment {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .task-due {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .btn-task {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .btn-start {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #0056b3;
+            color: white;
+        }
+        
+        .btn-view {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #545b62;
+            color: white;
+        }
+        
+        .btn-complete {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-complete:hover {
+            background: #1e7e34;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+        }
+        
+        .nav-item {
+            text-align: center;
+            text-decoration: none;
+            color: #6c757d;
+            font-size: 0.8rem;
+            transition: color 0.3s;
+        }
+        
+        .nav-item.active {
+            color: #007bff;
+        }
+        
+        .nav-item i {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+        
+        .main-content {
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+        
+        /* Pull to refresh indicator */
+        .refresh-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            display: none;
+        }
+        
+        .refresh-indicator.show {
+            display: block;
+        }
+        
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 480px) {
+            .mobile-header {
+                padding: 15px 10px;
+            }
+            
+            .stats-container {
+                padding: 15px 10px;
+            }
+            
+            .tasks-section {
+                padding: 0 10px;
+            }
+            
+            .task-card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="header-content">
+            <div class="user-info">
+                <h5>{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                <p>{{ current_user.role.title() }}</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="location.reload()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <a href="{{ url_for('mobile_profile') }}" class="btn-icon" title="Profile">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="{{ url_for('mobile_logout') }}" class="btn-icon" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Stats Section -->
+        <div class="stats-container">
+            <div class="row">
+                <div class="col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ work_orders|length }}</div>
+                        <div class="stat-label">Active Tasks</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ completed_today }}</div>
+                        <div class="stat-label">Completed Today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks Section -->
+        <div class="tasks-section">
+            <div class="section-header">
+                <h3 class="section-title">My Tasks</h3>
+                <a href="{{ url_for('mobile_tasks') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            
+            {% if work_orders %}
+                {% for work_order in work_orders %}
+                <div class="task-card {{ work_order.priority }}">
+                    <div class="task-header">
+                        <h4 class="task-title">{{ work_order.title }}</h4>
+                        <span class="task-priority priority-{{ work_order.priority }}">
+                            {{ work_order.priority }}
+                        </span>
+                    </div>
+                    
+                    <div class="task-details">
+                        <div class="task-equipment">
+                            <i class="fas fa-cogs"></i>
+                            <span>{{ work_order.equipment.name if work_order.equipment else 'No Equipment' }}</span>
+                        </div>
+                        
+                        {% if work_order.due_date %}
+                        <div class="task-due">
+                            <i class="fas fa-clock"></i>
+                            <span>Due: {{ work_order.due_date.strftime('%b %d, %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-actions">
+                        {% if work_order.status == 'open' %}
+                            <a href="{{ url_for('mobile_task_detail', work_order_id=work_order.id) }}" 
+                               class="btn-task btn-view">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <form method="POST" action="{{ url_for('mobile_start_task', work_order_id=work_order.id) }}" 
+                                  style="flex: 1; margin: 0;">
+                                <button type="submit" class="btn-task btn-start">
+                                    <i class="fas fa-play me-1"></i>Start
+                                </button>
+                            </form>
+                        {% elif work_order.status == 'in_progress' %}
+                            <a href="{{ url_for('mobile_task_detail', work_order_id=work_order.id) }}" 
+                               class="btn-task btn-view">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{{ url_for('mobile_complete_task', work_order_id=work_order.id) }}" 
+                               class="btn-task btn-complete">
+                                <i class="fas fa-check me-1"></i>Complete
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-check"></i>
+                    <h4>No Active Tasks</h4>
+                    <p>You're all caught up! Check back later for new assignments.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="{{ url_for('mobile_dashboard') }}" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('mobile_tasks') }}" class="nav-item">
+            <i class="fas fa-tasks"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="{{ url_for('mobile_profile') }}" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Pull to refresh functionality
+        let startY = 0;
+        let currentY = 0;
+        let pullDistance = 0;
+        const pullThreshold = 80;
+        
+        document.addEventListener('touchstart', function(e) {
+            if (window.scrollY === 0) {
+                startY = e.touches[0].clientY;
+            }
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (window.scrollY === 0) {
+                currentY = e.touches[0].clientY;
+                pullDistance = currentY - startY;
+                
+                if (pullDistance > 0 && pullDistance < pullThreshold) {
+                    document.body.style.transform = `translateY(${pullDistance}px)`;
+                }
+            }
+        });
+        
+        document.addEventListener('touchend', function(e) {
+            if (pullDistance > pullThreshold) {
+                location.reload();
+            }
+            
+            document.body.style.transform = '';
+            pullDistance = 0;
+        });
+        
+        // Auto-refresh every 5 minutes
+        setInterval(function() {
+            location.reload();
+        }, 5 * 60 * 1000);
+        
+        // Handle task action buttons
+        document.querySelectorAll('.btn-task').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-start') || this.classList.contains('btn-complete')) {
+                    this.style.opacity = '0.6';
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

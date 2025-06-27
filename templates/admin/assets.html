@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Asset Management</h1>
+            <p class="text-muted">Manage equipment and inventory assets</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('equipment_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Equipment
+            </a>
+            <a href="{{ url_for('inventory_new') }}" class="btn btn-outline-primary">
+                <i class="fas fa-boxes me-2"></i>Add Inventory
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ filters.search }}" placeholder="Name, model, serial number, location">
+                </div>
+                <div class="col-md-2">
+                    <label for="status_filter" class="form-label">Status</label>
+                    <select class="form-select" id="status_filter" name="status">
+                        <option value="all" {{ 'selected' if filters.status == 'all' }}>All Status</option>
+                        <option value="operational" {{ 'selected' if filters.status == 'operational' }}>Operational</option>
+                        <option value="maintenance" {{ 'selected' if filters.status == 'maintenance' }}>Maintenance</option>
+                        <option value="offline" {{ 'selected' if filters.status == 'offline' }}>Offline</option>
+                        <option value="out_of_service" {{ 'selected' if filters.status == 'out_of_service' }}>Out of Service</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="location_filter" class="form-label">Location</label>
+                    <select class="form-select" id="location_filter" name="location">
+                        <option value="all" {{ 'selected' if filters.location == 'all' }}>All Locations</option>
+                        {% for location in locations %}
+                        <option value="{{ location }}" {{ 'selected' if filters.location == location }}>{{ location }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="type_filter" class="form-label">Type</label>
+                    <select class="form-select" id="type_filter" name="type">
+                        <option value="all" {{ 'selected' if filters.type == 'all' }}>All Types</option>
+                        {% for type in equipment_types %}
+                        <option value="{{ type }}" {{ 'selected' if filters.type == type }}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assets Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Assets ({{ equipment_list|length }} total)</h6>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="bulkUpdateStatus('operational')">
+                    <i class="fas fa-check me-1"></i>Set Operational
+                </button>
+                <button type="button" class="btn btn-outline-warning btn-sm" onclick="bulkUpdateStatus('maintenance')">
+                    <i class="fas fa-tools me-1"></i>Set Maintenance
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkUpdateStatus('offline')">
+                    <i class="fas fa-times me-1"></i>Set Offline
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if equipment_list %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Asset</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Last Maintenance</th>
+                            <th>Work Orders</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipment in equipment_list %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="asset-checkbox" value="{{ equipment.id }}">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-3">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-cogs"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ equipment.name }}</div>
+                                        <div class="text-muted">{{ equipment.model if equipment.model else 'N/A' }}</div>
+                                        <small class="text-muted">ID: {{ equipment.equipment_id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ equipment.type.title() if equipment.type else 'N/A' }}</span>
+                            </td>
+                            <td>{{ equipment.location if equipment.location else 'N/A' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if equipment.status == 'operational' else 'warning' if equipment.status == 'maintenance' else 'danger' }}">
+                                    {{ equipment.status.replace('_', ' ').title() if equipment.status else 'N/A' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if equipment.last_maintenance_date %}
+                                    <div>{{ equipment.last_maintenance_date.strftime('%Y-%m-%d') }}</div>
+                                    <small class="text-muted">{{ equipment.last_maintenance_date.strftime('%H:%M') }}</small>
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set work_order_count = equipment.work_orders|length if equipment.work_orders else 0 %}
+                                <span class="badge bg-secondary">{{ work_order_count }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{{ url_for('equipment_detail', id=equipment.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-outline-warning btn-sm" 
+                                            onclick="quickStatusUpdate({{ equipment.id }})" title="Quick Status Update">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" 
+                                            onclick="viewMaintenanceHistory({{ equipment.id }})" title="Maintenance History">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No assets found</h5>
+                <p class="text-muted">Try adjusting your search criteria or add new equipment.</p>
+                <a href="{{ url_for('equipment_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First Asset
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Asset Statistics -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Operational
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ equipment_list|selectattr('status', 'equalto', 'operational')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Maintenance
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ equipment_list|selectattr('status', 'equalto', 'maintenance')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tools fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Offline
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ equipment_list|selectattr('status', 'equalto', 'offline')|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Assets
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ equipment_list|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cogs fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Status Update Modal -->
+<div class="modal fade" id="quickStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Status Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_equipment_status') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="equipment_id" name="equipment_id">
+                    <div class="mb-3">
+                        <label for="new_status" class="form-label">New Status</label>
+                        <select class="form-select" id="new_status" name="new_status" required>
+                            <option value="operational">Operational</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="offline">Offline</option>
+                            <option value="out_of_service">Out of Service</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.asset-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function bulkUpdateStatus(status) {
+    const selectedAssets = document.querySelectorAll('.asset-checkbox:checked');
+    
+    if (selectedAssets.length === 0) {
+        alert('Please select at least one asset.');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to set ${selectedAssets.length} asset(s) to ${status}?`)) {
+        const assetIds = Array.from(selectedAssets).map(cb => cb.value);
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('new_status', status);
+        assetIds.forEach(id => formData.append('equipment_ids', id));
+        
+        // Submit bulk update
+        fetch('{{ url_for("admin_bulk_equipment_status") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+function quickStatusUpdate(equipmentId) {
+    document.getElementById('equipment_id').value = equipmentId;
+    new bootstrap.Modal(document.getElementById('quickStatusModal')).show();
+}
+
+function viewMaintenanceHistory(equipmentId) {
+    window.open(`/equipment/${equipmentId}`, '_blank');
+}
+</script>
+{% endblock %} 

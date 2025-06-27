@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}{{ equipment.name }} - Equipment Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ equipment.name }} Analytics</h1>
+            <p class="text-muted">Detailed performance metrics and maintenance history</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('equipment_analytics') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Equipment List
+            </a>
+            <a href="{{ url_for('equipment_detail', id=equipment.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-eye me-2"></i>View Equipment
+            </a>
+        </div>
+    </div>
+
+    <!-- Equipment Info Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Equipment Information</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ equipment.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Model:</strong></td>
+                            <td>{{ equipment.model if equipment.model else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Location:</strong></td>
+                            <td>{{ equipment.location if equipment.location else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Serial Number:</strong></td>
+                            <td>{{ equipment.serial_number if equipment.serial_number else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Manufacturer:</strong></td>
+                            <td>{{ equipment.manufacturer if equipment.manufacturer else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Installation Date:</strong></td>
+                            <td>{{ equipment.installation_date.strftime('%Y-%m-%d') if equipment.installation_date else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tasks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Completed Tasks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_tasks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Completion Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(completion_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On-Time Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(on_time_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Task Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Priority Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="priorityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Metrics -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Performance Metrics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ "%.1f"|format(avg_duration) }}</div>
+                                <div class="text-muted">Average Duration (min)</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ on_time_tasks }}</div>
+                                <div class="text-muted">On-Time Tasks</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ total_tasks - completed_tasks }}</div>
+                                <div class="text-muted">Pending Tasks</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                {% set performance_score = completion_rate * 0.6 + on_time_rate * 0.4 %}
+                                <div class="h4 text-{{ 'success' if performance_score >= 80 else 'warning' if performance_score >= 60 else 'danger' }}">
+                                    {{ "%.1f"|format(performance_score) }}%
+                                </div>
+                                <div class="text-muted">Performance Score</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    {% if work_orders %}
+                        {% for work_order in work_orders[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">{{ work_order.title }}</h6>
+                                <small class="text-muted">{{ work_order.created_at.strftime('%Y-%m-%d') if work_order.created_at else 'N/A' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'secondary' }}">
+                                    {{ work_order.status.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if work_orders|length > 5 %}
+                        <div class="text-center">
+                            <a href="{{ url_for('task_logs', equipment_id=equipment.id) }}" class="btn btn-outline-primary btn-sm">
+                                View All Tasks
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Orders Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Work Order History</h6>
+        </div>
+        <div class="card-body">
+            {% if work_orders %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Work Order ID</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Created Date</th>
+                            <th>Due Date</th>
+                            <th>Actual End</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for work_order in work_orders %}
+                        <tr>
+                            <td><strong>{{ work_order.work_order_number }}</strong></td>
+                            <td>{{ work_order.title }}</td>
+                            <td>{{ work_order.type.title() }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if work_order.priority == 'urgent' else 'warning' if work_order.priority == 'high' else 'info' if work_order.priority == 'medium' else 'success' }}">
+                                    {{ work_order.priority.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'secondary' }}">
+                                    {{ work_order.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if work_order.assigned_technician %}
+                                    {{ work_order.assigned_technician.first_name }} {{ work_order.assigned_technician.last_name }}
+                                {% else %}
+                                    Unassigned
+                                {% endif %}
+                            </td>
+                            <td>{{ work_order.created_at.strftime('%Y-%m-%d') if work_order.created_at else 'N/A' }}</td>
+                            <td>{{ work_order.due_date.strftime('%Y-%m-%d') if work_order.due_date else 'N/A' }}</td>
+                            <td>{{ work_order.actual_end_time.strftime('%Y-%m-%d') if work_order.actual_end_time else 'N/A' }}</td>
+                            <td>{{ work_order.actual_duration if work_order.actual_duration else 'N/A' }} min</td>
+                            <td>
+                                <a href="{{ url_for('work_order_detail', id=work_order.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No work orders found</h5>
+                <p class="text-muted">This equipment has no associated work orders.</p>
+                <a href="{{ url_for('new_work_order') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Work Order
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Task Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusData = {
+        completed: {{ completed_tasks }},
+        in_progress: {{ work_orders|selectattr('status', 'equalto', 'in_progress')|list|length }},
+        open: {{ work_orders|selectattr('status', 'equalto', 'open')|list|length }},
+        cancelled: {{ work_orders|selectattr('status', 'equalto', 'cancelled')|list|length }}
+    };
+
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'In Progress', 'Open', 'Cancelled'],
+            datasets: [{
+                data: [statusData.completed, statusData.in_progress, statusData.open, statusData.cancelled],
+                backgroundColor: ['#28a745', '#ffc107', '#6c757d', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Priority Breakdown Chart
+    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+    const priorityData = {
+        urgent: {{ work_orders|selectattr('priority', 'equalto', 'urgent')|list|length }},
+        high: {{ work_orders|selectattr('priority', 'equalto', 'high')|list|length }},
+        medium: {{ work_orders|selectattr('priority', 'equalto', 'medium')|list|length }},
+        low: {{ work_orders|selectattr('priority', 'equalto', 'low')|list|length }}
+    };
+
+    new Chart(priorityCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Urgent', 'High', 'Medium', 'Low'],
+            datasets: [{
+                data: [priorityData.urgent, priorityData.high, priorityData.medium, priorityData.low],
+                backgroundColor: ['#dc3545', '#fd7e14', '#17a2b8', '#28a745'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

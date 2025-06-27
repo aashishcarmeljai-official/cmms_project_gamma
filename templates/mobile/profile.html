@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Profile - CMMS Mobile</title>
+    <meta name="theme-color" content="#6c757d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+        
+        .header-info h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            padding: 20px 15px;
+        }
+        
+        .profile-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .profile-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .profile-role {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .info-section {
+            margin-bottom: 20px;
+        }
+        
+        .info-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .action-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #f1f3f4;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+        }
+        
+        .action-item:last-child {
+            border-bottom: none;
+        }
+        
+        .action-item:hover {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding-left: 10px;
+            padding-right: 10px;
+            margin-left: -10px;
+            margin-right: -10px;
+        }
+        
+        .action-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .action-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        
+        .icon-primary {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .icon-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .icon-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .icon-danger {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .action-text h6 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .action-text p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .action-arrow {
+            color: #6c757d;
+        }
+        
+        .logout-section {
+            margin-top: 30px;
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(220,53,69,0.3);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+        }
+        
+        .nav-item {
+            text-align: center;
+            text-decoration: none;
+            color: #6c757d;
+            font-size: 0.8rem;
+            transition: color 0.3s;
+        }
+        
+        .nav-item.active {
+            color: #007bff;
+        }
+        
+        .nav-item i {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+        
+        .main-content {
+            padding-bottom: 80px;
+        }
+        
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px 10px;
+            }
+            
+            .profile-card, .info-card, .action-card {
+                padding: 15px;
+            }
+            
+            .profile-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="header-content">
+            <a href="{{ url_for('mobile_dashboard') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="header-info">
+                <h5>Profile</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Profile Card -->
+        <div class="profile-card">
+            <div class="profile-avatar">
+                {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+            </div>
+            <div class="profile-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+            <div class="profile-role">{{ current_user.role.title() }}</div>
+            
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="activeTasks">-</div>
+                    <div class="stat-label">Active Tasks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completedToday">-</div>
+                    <div class="stat-label">Completed Today</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Personal Information -->
+        <div class="info-card">
+            <div class="info-title">
+                <i class="fas fa-user"></i>
+                Personal Information
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Username</span>
+                <span class="info-value">{{ current_user.username }}</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ current_user.email }}</span>
+            </div>
+            
+            {% if current_user.phone %}
+            <div class="info-item">
+                <span class="info-label">Phone</span>
+                <span class="info-value">{{ current_user.phone }}</span>
+            </div>
+            {% endif %}
+            
+            {% if current_user.department %}
+            <div class="info-item">
+                <span class="info-label">Department</span>
+                <span class="info-value">{{ current_user.department }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Team Information -->
+        {% if current_user.teams %}
+        <div class="info-card">
+            <div class="info-title">
+                <i class="fas fa-users"></i>
+                Team Memberships
+            </div>
+            
+            {% for team in current_user.teams %}
+            <div class="info-item">
+                <span class="info-label">{{ team.name }}</span>
+                <span class="info-value">{{ team.members|length }} members</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Quick Actions -->
+        <div class="action-card">
+            <div class="info-title">
+                <i class="fas fa-cog"></i>
+                Quick Actions
+            </div>
+            
+            <a href="{{ url_for('mobile_dashboard') }}" class="action-item">
+                <div class="action-left">
+                    <div class="action-icon icon-primary">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="action-text">
+                        <h6>Dashboard</h6>
+                        <p>View your active tasks</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right action-arrow"></i>
+            </a>
+            
+            <a href="{{ url_for('mobile_tasks') }}" class="action-item">
+                <div class="action-left">
+                    <div class="action-icon icon-success">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="action-text">
+                        <h6>All Tasks</h6>
+                        <p>View and filter all tasks</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right action-arrow"></i>
+            </a>
+            
+            <a href="/" class="action-item">
+                <div class="action-left">
+                    <div class="action-icon icon-warning">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <div class="action-text">
+                        <h6>Desktop Version</h6>
+                        <p>Access full CMMS system</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right action-arrow"></i>
+            </a>
+        </div>
+        
+        <!-- Logout Section -->
+        <div class="logout-section">
+            <a href="{{ url_for('mobile_logout') }}" class="btn-logout">
+                <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+            </a>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="{{ url_for('mobile_dashboard') }}" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('mobile_tasks') }}" class="nav-item">
+            <i class="fas fa-tasks"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="{{ url_for('mobile_profile') }}" class="nav-item active">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load user stats
+        async function loadUserStats() {
+            try {
+                const response = await fetch('/api/mobile/tasks');
+                const tasks = await response.json();
+                
+                const activeTasks = tasks.filter(task => task.status === 'open' || task.status === 'in_progress').length;
+                document.getElementById('activeTasks').textContent = activeTasks;
+                
+                // Get completed today count
+                const today = new Date().toISOString().split('T')[0];
+                const completedToday = tasks.filter(task => 
+                    task.status === 'completed' && 
+                    task.completed_at && 
+                    task.completed_at.startsWith(today)
+                ).length;
+                document.getElementById('completedToday').textContent = completedToday;
+                
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+            }
+        }
+        
+        // Load stats on page load
+        document.addEventListener('DOMContentLoaded', loadUserStats);
+        
+        // Handle logout confirmation
+        document.querySelector('.btn-logout').addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to sign out?')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Handle action item clicks
+        document.querySelectorAll('.action-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Add loading state
+                this.style.opacity = '0.6';
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Task #{{ work_order.work_order_number }} - CMMS Mobile</title>
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+        
+        .task-info h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .task-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 20px 15px;
+        }
+        
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .task-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            flex: 1;
+        }
+        
+        .task-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-open {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-in_progress {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .task-priority {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        
+        .priority-urgent {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .priority-high {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .priority-medium {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .priority-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .info-item i {
+            color: #007bff;
+            width: 16px;
+        }
+        
+        .info-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin: 0;
+        }
+        
+        .info-value {
+            font-size: 0.9rem;
+            color: #333;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .task-description {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .task-description h6 {
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .task-description p {
+            color: #666;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .media-section {
+            margin-bottom: 20px;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .media-item {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .media-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .media-item.audio {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-action {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .btn-start {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #0056b3;
+            color: white;
+        }
+        
+        .btn-complete {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-complete:hover {
+            background: #1e7e34;
+            color: white;
+        }
+        
+        .btn-add-proof {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-add-proof:hover {
+            background: #545b62;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        
+        .modal-content {
+            position: relative;
+            margin: auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .modal img, .modal video {
+            width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close-modal:hover {
+            color: #bbb;
+        }
+        
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px 10px;
+            }
+            
+            .task-card {
+                padding: 15px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="header-content">
+            <a href="{{ url_for('mobile_dashboard') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="task-info">
+                <h5>Task #{{ work_order.work_order_number }}</h5>
+                <p>{{ work_order.equipment.name if work_order.equipment else 'No Equipment' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Task Details Card -->
+        <div class="task-card">
+            <div class="task-header">
+                <h2 class="task-title">{{ work_order.title }}</h2>
+                <div>
+                    <span class="task-status status-{{ work_order.status }}">
+                        {{ work_order.status.replace('_', ' ').title() }}
+                    </span>
+                    <span class="task-priority priority-{{ work_order.priority }}">
+                        {{ work_order.priority }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <i class="fas fa-cogs"></i>
+                    <div>
+                        <p class="info-label">Equipment</p>
+                        <p class="info-value">{{ work_order.equipment.name if work_order.equipment else 'N/A' }}</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-tag"></i>
+                    <div>
+                        <p class="info-label">Type</p>
+                        <p class="info-value">{{ work_order.type.title() }}</p>
+                    </div>
+                </div>
+                
+                {% if work_order.scheduled_date %}
+                <div class="info-item">
+                    <i class="fas fa-calendar"></i>
+                    <div>
+                        <p class="info-label">Scheduled</p>
+                        <p class="info-value">{{ work_order.scheduled_date.strftime('%b %d, %H:%M') }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if work_order.due_date %}
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <p class="info-label">Due</p>
+                        <p class="info-value">{{ work_order.due_date.strftime('%b %d, %H:%M') }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if work_order.estimated_duration %}
+                <div class="info-item">
+                    <i class="fas fa-hourglass-half"></i>
+                    <div>
+                        <p class="info-label">Est. Duration</p>
+                        <p class="info-value">{{ work_order.estimated_duration }} min</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if work_order.actual_duration %}
+                <div class="info-item">
+                    <i class="fas fa-stopwatch"></i>
+                    <div>
+                        <p class="info-label">Actual Duration</p>
+                        <p class="info-value">{{ work_order.actual_duration }} min</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="task-description">
+                <h6><i class="fas fa-file-alt me-2"></i>Description</h6>
+                <p>{{ work_order.description }}</p>
+            </div>
+            
+            {% if work_order.completion_notes %}
+            <div class="task-description">
+                <h6><i class="fas fa-check-circle me-2"></i>Completion Notes</h6>
+                <p>{{ work_order.completion_notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Media Section -->
+        {% if work_order.images or work_order.videos or work_order.voice_notes %}
+        <div class="task-card">
+            <h6><i class="fas fa-camera me-2"></i>Attached Media</h6>
+            <div class="media-grid">
+                {% if work_order.images %}
+                    {% for image in work_order.images.split(',') %}
+                    <div class="media-item" onclick="openMediaModal('{{ url_for('static', filename=image.strip()) }}', 'image')">
+                        <img src="{{ url_for('static', filename=image.strip()) }}" alt="Task Image">
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if work_order.videos %}
+                    {% for video in work_order.videos.split(',') %}
+                    <div class="media-item" onclick="openMediaModal('{{ url_for('static', filename=video.strip()) }}', 'video')">
+                        <video>
+                            <source src="{{ url_for('static', filename=video.strip()) }}" type="video/mp4">
+                        </video>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if work_order.voice_notes %}
+                    {% for voice in work_order.voice_notes.split(',') %}
+                    <div class="media-item audio" onclick="openMediaModal('{{ url_for('static', filename=voice.strip()) }}', 'audio')">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            {% if work_order.status == 'open' %}
+                <form method="POST" action="{{ url_for('mobile_start_task', work_order_id=work_order.id) }}">
+                    <button type="submit" class="btn-action btn-start">
+                        <i class="fas fa-play me-2"></i>Start Task
+                    </button>
+                </form>
+            {% elif work_order.status == 'in_progress' %}
+                <a href="{{ url_for('mobile_complete_task', work_order_id=work_order.id) }}" class="btn-action btn-complete">
+                    <i class="fas fa-check me-2"></i>Complete Task
+                </a>
+                <form method="POST" action="{{ url_for('mobile_add_proof', work_order_id=work_order.id) }}" enctype="multipart/form-data">
+                    <input type="file" name="proof_images" multiple accept="image/*" style="display: none;" id="proofUpload" onchange="this.form.submit()">
+                    <button type="button" class="btn-action btn-add-proof" onclick="document.getElementById('proofUpload').click()">
+                        <i class="fas fa-camera me-2"></i>Add Proof
+                    </button>
+                </form>
+            {% elif work_order.status == 'completed' %}
+                <a href="{{ url_for('mobile_dashboard') }}" class="btn-action btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Media Modal -->
+    <div id="mediaModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeMediaModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openMediaModal(src, type) {
+            const modal = document.getElementById('mediaModal');
+            const content = document.getElementById('modalContent');
+            
+            if (type === 'image') {
+                content.innerHTML = `<img src="${src}" alt="Media">`;
+            } else if (type === 'video') {
+                content.innerHTML = `<video controls autoplay><source src="${src}" type="video/mp4"></video>`;
+            } else if (type === 'audio') {
+                content.innerHTML = `<audio controls autoplay><source src="${src}" type="audio/mpeg"></audio>`;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeMediaModal() {
+            document.getElementById('mediaModal').style.display = 'none';
+            document.getElementById('modalContent').innerHTML = '';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('mediaModal');
+            if (event.target === modal) {
+                closeMediaModal();
+            }
+        }
+        
+        // Handle form submissions
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.style.opacity = '0.6';
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

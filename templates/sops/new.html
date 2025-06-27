@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}New Standard Operating Procedure{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-plus"></i> New Standard Operating Procedure</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control") }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.name.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.category.label(class="form-label") }}
+                                    {{ form.category(class="form-select") }}
+                                    {% if form.category.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.category.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4) }}
+                            {% if form.description.errors %}
+                            <div class="text-danger">
+                                {% for error in form.description.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.equipment_id.label(class="form-label") }}
+                                    {{ form.equipment_id(class="form-select") }}
+                                    {% if form.equipment_id.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.equipment_id.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.estimated_duration.label(class="form-label") }}
+                                    {{ form.estimated_duration(class="form-control", placeholder="in minutes") }}
+                                    {% if form.estimated_duration.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.estimated_duration.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.safety_notes.label(class="form-label") }}
+                            {{ form.safety_notes(class="form-control", rows=3, placeholder="Important safety considerations...") }}
+                            {% if form.safety_notes.errors %}
+                            <div class="text-danger">
+                                {% for error in form.safety_notes.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.required_tools.label(class="form-label") }}
+                                    {{ form.required_tools(class="form-control", rows=3, placeholder="List required tools...") }}
+                                    {% if form.required_tools.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.required_tools.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.required_parts.label(class="form-label") }}
+                                    {{ form.required_parts(class="form-control", rows=3, placeholder="List required parts...") }}
+                                    {% if form.required_parts.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.required_parts.errors %}
+                                        <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('sops_list') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

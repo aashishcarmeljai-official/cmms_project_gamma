@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Admin Dashboard</h1>
+            <p class="text-muted">System administration and management</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-2"></i>Analytics
+            </a>
+            <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-cog me-2"></i>Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Users
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Work Orders
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_work_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Equipment
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_equipment }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cogs fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                System Health
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(system_health) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-heartbeat fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-users me-2"></i>Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin_roles') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-user-tag me-2"></i>Role Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin_teams') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-user-friends me-2"></i>Team Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin_equipment') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-cogs me-2"></i>Equipment Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and System Status -->
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent System Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>
+                                        <div>{{ activity.user.first_name }} {{ activity.user.last_name }}</div>
+                                        <small class="text-muted">{{ activity.user.role.title() }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if activity.action_type == 'create' else 'warning' if activity.action_type == 'update' else 'danger' }}">
+                                            {{ activity.action_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ activity.description }}</td>
+                                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') if activity.timestamp else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Database</span>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>File Storage</span>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Email Service</span>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Backup System</span>
+                            <span class="badge bg-success">Last: 2h ago</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Statistics -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Administrators</span>
+                            <span class="font-weight-bold">{{ admin_count }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Managers</span>
+                            <span class="font-weight-bold">{{ manager_count }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Technicians</span>
+                            <span class="font-weight-bold">{{ technician_count }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Viewers</span>
+                            <span class="font-weight-bold">{{ viewer_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Alerts -->
+    {% if system_alerts %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow border-left-danger">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">System Alerts</h6>
+                </div>
+                <div class="card-body">
+                    {% for alert in system_alerts %}
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>{{ alert.title }}</strong>
+                            <p class="mb-0">{{ alert.message }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-refresh system status every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %} 

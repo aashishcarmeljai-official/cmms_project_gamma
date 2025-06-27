@@ -1,282 +1,477 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Work Order - CMMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-tools me-2"></i>Gamma Project
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/equipment"><i class="fas fa-cogs me-1"></i>Equipment</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/work-orders"><i class="fas fa-clipboard-list me-1"></i>Work Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/inventory"><i class="fas fa-boxes me-1"></i>Inventory</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+{% extends 'base.html' %}
+{% block title %}New Work Order{% endblock %}
+{% block head %}
+<style>
+.media-upload-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
 
-    <main class="container mt-4">
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/work-orders">Work Orders</a></li>
-                        <li class="breadcrumb-item active">Create Work Order</li>
-                    </ol>
-                </nav>
-                <h1 class="h3 mb-0">
-                    <i class="fas fa-plus text-primary me-2"></i>
-                    Create New Work Order
-                </h1>
-                <p class="text-muted">Create a new maintenance work order</p>
-            </div>
-        </div>
+.media-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
 
-        <!-- Work Order Form -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-clipboard-list me-2"></i>Work Order Information
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="/work-orders/new">
-                            <div class="row">
-                                <!-- Basic Information -->
-                                <div class="col-md-6">
-                                    <h6 class="mb-3">Basic Information</h6>
-                                    
-                                    <div class="mb-3">
-                                        <label for="title" class="form-label">Work Order Title *</label>
-                                        <input type="text" class="form-control" id="title" name="title" required>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="description" class="form-label">Description *</label>
-                                        <textarea class="form-control" id="description" name="description" rows="4" required placeholder="Describe the maintenance work to be performed"></textarea>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="equipment_id" class="form-label">Equipment *</label>
-                                        <select class="form-select" id="equipment_id" name="equipment_id" required>
-                                            <option value="">Select Equipment</option>
-                                            {% for eq in equipment %}
-                                            <option value="{{ eq.id }}">{{ eq.name }} ({{ eq.equipment_id }}) - {{ eq.location or 'No location' }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="type" class="form-label">Work Order Type</label>
-                                        <select class="form-select" id="type" name="type">
-                                            <option value="corrective" selected>Corrective</option>
-                                            <option value="preventive">Preventive</option>
-                                            <option value="emergency">Emergency</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- Assignment & Scheduling -->
-                                <div class="col-md-6">
-                                    <h6 class="mb-3">Assignment & Scheduling</h6>
-                                    
-                                    <div class="mb-3">
-                                        <label for="priority" class="form-label">Priority</label>
-                                        <select class="form-select" id="priority" name="priority">
-                                            <option value="low">Low</option>
-                                            <option value="medium" selected>Medium</option>
-                                            <option value="high">High</option>
-                                            <option value="urgent">Urgent</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="assigned_technician_id" class="form-label">Assign To</label>
-                                        <select class="form-select" id="assigned_technician_id" name="assigned_technician_id">
-                                            <option value="">Select Technician</option>
-                                            {% for tech in technicians %}
-                                            <option value="{{ tech.id }}">{{ tech.first_name }} {{ tech.last_name }} ({{ tech.department or 'No department' }})</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="scheduled_date" class="form-label">Scheduled Date & Time</label>
-                                        <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date">
-                                        <div class="form-text">Leave empty for immediate scheduling</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
-                                        <input type="number" class="form-control" id="estimated_duration" name="estimated_duration" min="15" step="15" placeholder="e.g., 120">
-                                        <div class="form-text">Estimated time to complete the work</div>
-                                    </div>
+.media-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #dee2e6;
+}
+
+.media-item img, .media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-item.audio {
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-item .remove-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.upload-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.upload-btn:hover {
+    background: #0056b3;
+}
+
+.upload-btn i {
+    margin-right: 8px;
+}
+
+.upload-progress {
+    width: 100%;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.upload-progress-bar {
+    height: 100%;
+    background: #28a745;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+.voice-recorder {
+    background: #fff;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.record-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: #dc3545;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.record-btn.recording {
+    background: #28a745;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.recording-time {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #dc3545;
+}
+
+@media (max-width: 768px) {
+    .media-upload-section {
+        padding: 15px;
+    }
+    
+    .upload-btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .media-preview {
+        justify-content: center;
+    }
+    
+    .media-item {
+        width: 80px;
+        height: 80px;
+    }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>Create New Work Order
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="workOrderForm">
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <select class="form-select" id="priority" name="priority">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="equipment_id" class="form-label">Equipment *</label>
+                                    <select class="form-select" id="equipment_id" name="equipment_id" required>
+                                        <option value="">Select Equipment</option>
+                                        {% for eq in equipment %}
+                                        <option value="{{ eq.id }}">{{ eq.name }} ({{ eq.equipment_id }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="type" class="form-label">Type</label>
+                                    <select class="form-select" id="type" name="type">
+                                        <option value="corrective" selected>Corrective</option>
+                                        <option value="preventive">Preventive</option>
+                                        <option value="emergency">Emergency</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required 
+                                      placeholder="Describe the issue or maintenance task..."></textarea>
+                        </div>
+
+                        <!-- Media Upload Section -->
+                        <div class="media-upload-section">
+                            <h5><i class="fas fa-camera me-2"></i>Media Upload</h5>
+                            <p class="text-muted">Add photos, videos, or voice notes to document the issue or task</p>
                             
-                            <!-- Equipment Information Display -->
-                            <div class="row">
-                                <div class="col-12">
-                                    <h6 class="mb-3">Equipment Information</h6>
-                                    <div id="equipmentInfo" class="alert alert-info" style="display: none;">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <strong>Equipment:</strong> <span id="equipmentName"></span><br>
-                                                <strong>Location:</strong> <span id="equipmentLocation"></span><br>
-                                                <strong>Status:</strong> <span id="equipmentStatus"></span>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <strong>Category:</strong> <span id="equipmentCategory"></span><br>
-                                                <strong>Criticality:</strong> <span id="equipmentCriticality"></span><br>
-                                                <strong>Department:</strong> <span id="equipmentDepartment"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <!-- Photo Upload -->
+                            <div class="mb-4">
+                                <label class="form-label">Photos</label>
+                                <button type="button" class="upload-btn" onclick="document.getElementById('images').click()">
+                                    <i class="fas fa-camera"></i>Add Photos
+                                </button>
+                                <input type="file" id="images" name="images" multiple accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+                                <div class="media-preview" id="imagePreview"></div>
+                            </div>
+
+                            <!-- Video Upload -->
+                            <div class="mb-4">
+                                <label class="form-label">Videos</label>
+                                <button type="button" class="upload-btn" onclick="document.getElementById('videos').click()">
+                                    <i class="fas fa-video"></i>Add Videos
+                                </button>
+                                <input type="file" id="videos" name="videos" multiple accept="video/*" style="display: none;" onchange="handleVideoUpload(this)">
+                                <div class="media-preview" id="videoPreview"></div>
+                            </div>
+
+                            <!-- Voice Recording -->
+                            <div class="mb-4">
+                                <label class="form-label">Voice Notes</label>
+                                <div class="voice-recorder">
+                                    <button type="button" class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <div class="recording-time" id="recordingTime" style="display: none;">00:00</div>
+                                    <p class="mb-0" id="recordingStatus">Click to start recording</p>
+                                </div>
+                                <input type="file" id="voice_notes" name="voice_notes" multiple accept="audio/*" style="display: none;" onchange="handleVoiceUpload(this)">
+                                <button type="button" class="upload-btn" onclick="document.getElementById('voice_notes').click()">
+                                    <i class="fas fa-upload"></i>Upload Audio Files
+                                </button>
+                                <div class="media-preview" id="voicePreview"></div>
+                            </div>
+                        </div>
+
+                        <!-- Assignment & Scheduling -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="assigned_technician_id" class="form-label">Assign to Technician</label>
+                                    <select class="form-select" id="assigned_technician_id" name="assigned_technician_id">
+                                        <option value="">Select Technician</option>
+                                        {% for tech in technicians %}
+                                        <option value="{{ tech.id }}">{{ tech.first_name }} {{ tech.last_name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
-                            
-                            <!-- Form Actions -->
-                            <div class="row">
-                                <div class="col-12">
-                                    <hr class="my-4">
-                                    <div class="d-flex justify-content-between">
-                                        <a href="/work-orders" class="btn btn-secondary">
-                                            <i class="fas fa-arrow-left me-2"></i>Cancel
-                                        </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save me-2"></i>Create Work Order
-                                        </button>
-                                    </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="assigned_team_id" class="form-label">Assign to Team</label>
+                                    <select class="form-select" id="assigned_team_id" name="assigned_team_id">
+                                        <option value="">Select Team</option>
+                                        {% for team in teams %}
+                                        <option value="{{ team.id }}">{{ team.name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
-                        </form>
-                    </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="scheduled_date" class="form-label">Scheduled Date</label>
+                                    <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="due_date" class="form-label">Due Date</label>
+                                    <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
+                            <input type="number" class="form-control" id="estimated_duration" name="estimated_duration" min="1">
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('work_orders_list') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Work Order
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Equipment data for display
-        const equipmentData = {
-            {% for eq in equipment %}
-            {{ eq.id }}: {
-                name: "{{ eq.name }}",
-                location: "{{ eq.location or 'No location' }}",
-                status: "{{ eq.status }}",
-                category: "{{ eq.category }}",
-                criticality: "{{ eq.criticality }}",
-                department: "{{ eq.department or 'No department' }}"
-            },
-            {% endfor %}
-        };
-        
-        // Show equipment information when selected
-        document.getElementById('equipment_id').addEventListener('change', function() {
-            const equipmentId = this.value;
-            const equipmentInfo = document.getElementById('equipmentInfo');
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let recordingInterval;
+let recordingSeconds = 0;
+
+// Image upload handling
+function handleImageUpload(input) {
+    const files = Array.from(input.files);
+    const preview = document.getElementById('imagePreview');
+    
+    files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                mediaItem.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <button type="button" class="remove-btn" onclick="removeMediaItem(this)">×</button>
+                `;
+                preview.appendChild(mediaItem);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Video upload handling
+function handleVideoUpload(input) {
+    const files = Array.from(input.files);
+    const preview = document.getElementById('videoPreview');
+    
+    files.forEach(file => {
+        if (file.type.startsWith('video/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                mediaItem.innerHTML = `
+                    <video controls>
+                        <source src="${e.target.result}" type="${file.type}">
+                    </video>
+                    <button type="button" class="remove-btn" onclick="removeMediaItem(this)">×</button>
+                `;
+                preview.appendChild(mediaItem);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Voice upload handling
+function handleVoiceUpload(input) {
+    const files = Array.from(input.files);
+    const preview = document.getElementById('voicePreview');
+    
+    files.forEach(file => {
+        if (file.type.startsWith('audio/')) {
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'media-item audio';
+            mediaItem.innerHTML = `
+                <i class="fas fa-volume-up fa-2x text-primary"></i>
+                <button type="button" class="remove-btn" onclick="removeMediaItem(this)">×</button>
+            `;
+            preview.appendChild(mediaItem);
+        }
+    });
+}
+
+// Remove media item
+function removeMediaItem(button) {
+    button.parentElement.remove();
+}
+
+// Voice recording functionality
+async function toggleRecording() {
+    const recordBtn = document.getElementById('recordBtn');
+    const recordingTime = document.getElementById('recordingTime');
+    const recordingStatus = document.getElementById('recordingStatus');
+    
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        // Start recording
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
             
-            if (equipmentId && equipmentData[equipmentId]) {
-                const eq = equipmentData[equipmentId];
-                document.getElementById('equipmentName').textContent = eq.name;
-                document.getElementById('equipmentLocation').textContent = eq.location;
-                document.getElementById('equipmentStatus').textContent = eq.status;
-                document.getElementById('equipmentCategory').textContent = eq.category;
-                document.getElementById('equipmentCriticality').textContent = eq.criticality;
-                document.getElementById('equipmentDepartment').textContent = eq.department;
-                equipmentInfo.style.display = 'block';
-            } else {
-                equipmentInfo.style.display = 'none';
-            }
-        });
-        
-        // Set default scheduled date to current date/time
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
             
-            const defaultDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-            document.getElementById('scheduled_date').value = defaultDateTime;
-        });
-        
-        // Form validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const title = document.getElementById('title').value.trim();
-            const description = document.getElementById('description').value.trim();
-            const equipmentId = document.getElementById('equipment_id').value;
-            
-            if (!title || !description || !equipmentId) {
-                e.preventDefault();
-                alert('Please fill in all required fields.');
-                return false;
-            }
-            
-            // Validate estimated duration
-            const estimatedDuration = parseInt(document.getElementById('estimated_duration').value);
-            if (estimatedDuration && estimatedDuration < 15) {
-                e.preventDefault();
-                alert('Estimated duration must be at least 15 minutes.');
-                return false;
-            }
-        });
-        
-        // Priority-based scheduling suggestions
-        document.getElementById('priority').addEventListener('change', function() {
-            const priority = this.value;
-            const scheduledDate = document.getElementById('scheduled_date');
-            const now = new Date();
-            
-            if (priority === 'urgent') {
-                // For urgent work orders, suggest immediate scheduling
-                const urgentDateTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
-                const year = urgentDateTime.getFullYear();
-                const month = String(urgentDateTime.getMonth() + 1).padStart(2, '0');
-                const day = String(urgentDateTime.getDate()).padStart(2, '0');
-                const hours = String(urgentDateTime.getHours()).padStart(2, '0');
-                const minutes = String(urgentDateTime.getMinutes()).padStart(2, '0');
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
                 
-                scheduledDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-            } else if (priority === 'high') {
-                // For high priority, suggest within 2 hours
-                const highPriorityDateTime = new Date(now.getTime() + 2 * 60 * 60000); // 2 hours from now
-                const year = highPriorityDateTime.getFullYear();
-                const month = String(highPriorityDateTime.getMonth() + 1).padStart(2, '0');
-                const day = String(highPriorityDateTime.getDate()).padStart(2, '0');
-                const hours = String(highPriorityDateTime.getHours()).padStart(2, '0');
-                const minutes = String(highPriorityDateTime.getMinutes()).padStart(2, '0');
+                // Create audio element for preview
+                const preview = document.getElementById('voicePreview');
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item audio';
+                mediaItem.innerHTML = `
+                    <audio controls style="width: 100%; height: 100%;">
+                        <source src="${audioUrl}" type="audio/wav">
+                    </audio>
+                    <button type="button" class="remove-btn" onclick="removeMediaItem(this)">×</button>
+                `;
+                preview.appendChild(mediaItem);
                 
-                scheduledDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-            }
-        });
-    </script>
-</body>
-</html> 
+                // Create file input for form submission
+                const fileInput = document.getElementById('voice_notes');
+                const file = new File([audioBlob], `voice_note_${Date.now()}.wav`, { type: 'audio/wav' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            };
+            
+            mediaRecorder.start();
+            recordBtn.classList.add('recording');
+            recordingTime.style.display = 'block';
+            recordingStatus.textContent = 'Recording... Click to stop';
+            
+            // Start timer
+            recordingSeconds = 0;
+            recordingInterval = setInterval(() => {
+                recordingSeconds++;
+                const minutes = Math.floor(recordingSeconds / 60);
+                const seconds = recordingSeconds % 60;
+                recordingTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            alert('Unable to access microphone. Please check permissions.');
+        }
+    } else {
+        // Stop recording
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        recordingTime.style.display = 'none';
+        recordingStatus.textContent = 'Click to start recording';
+        clearInterval(recordingInterval);
+        
+        // Stop all tracks
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+// Form submission with progress tracking
+document.getElementById('workOrderForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    submitBtn.disabled = true;
+    
+    // Re-enable after a delay (in case of validation errors)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 5000);
+});
+</script>
+{% endblock %} 
