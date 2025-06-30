@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Failure - {{ equipment.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .qr-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .qr-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .qr-header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .qr-body {
+            padding: 30px 20px;
+        }
+        .equipment-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 5px solid #007bff;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            font-size: 16px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+        }
+        .media-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .media-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .media-item img, .media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .media-item audio {
+            width: 100%;
+        }
+        .remove-media {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,0,0,0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .capture-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .capture-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        .capture-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .urgency-high {
+            border-left: 5px solid #dc3545;
+        }
+        .urgency-medium {
+            border-left: 5px solid #ffc107;
+        }
+        .urgency-low {
+            border-left: 5px solid #28a745;
+        }
+        @media (max-width: 768px) {
+            .qr-container {
+                padding: 10px;
+            }
+            .qr-body {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <div class="qr-card">
+            <!-- Header -->
+            <div class="qr-header">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h2 class="mb-2">Report Equipment Failure</h2>
+                <p class="mb-0">Help us fix the issue quickly</p>
+            </div>
+
+            <!-- Body -->
+            <div class="qr-body">
+                <!-- Equipment Information -->
+                <div class="equipment-info">
+                    <h5 class="mb-2">
+                        <i class="fas fa-cog me-2"></i>{{ equipment.name }}
+                    </h5>
+                    <p class="mb-1"><strong>ID:</strong> {{ equipment.equipment_id }}</p>
+                    <p class="mb-1"><strong>Location:</strong> {{ equipment.location or 'Not specified' }}</p>
+                    <p class="mb-0"><strong>Category:</strong> {{ equipment.category }}</p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Failure Report Form -->
+                <form method="POST" enctype="multipart/form-data" id="failureForm">
+                    <!-- Failure Type -->
+                    <div class="mb-3">
+                        <label for="failure_type" class="form-label">
+                            <i class="fas fa-tools me-2"></i>Type of Failure
+                        </label>
+                        <select class="form-select" id="failure_type" name="failure_type" required>
+                            <option value="mechanical">Mechanical Failure</option>
+                            <option value="electrical">Electrical Issue</option>
+                            <option value="software">Software/Control Problem</option>
+                            <option value="safety">Safety Concern</option>
+                            <option value="performance">Performance Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Urgency Level -->
+                    <div class="mb-3">
+                        <label for="urgency" class="form-label">
+                            <i class="fas fa-exclamation-circle me-2"></i>Urgency Level
+                        </label>
+                        <select class="form-select" id="urgency" name="urgency" required>
+                            <option value="high">High - Equipment Down/Unsafe</option>
+                            <option value="medium">Medium - Reduced Performance</option>
+                            <option value="low">Low - Minor Issue</option>
+                        </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-comment me-2"></i>Describe the Problem
+                        </label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  placeholder="Please describe what happened, what you observed, and any error messages..." required></textarea>
+                    </div>
+
+                    <!-- Media Capture Section -->
+                    <div class="media-section">
+                        <h6 class="mb-3">
+                            <i class="fas fa-camera me-2"></i>Add Photos, Videos, or Audio
+                        </h6>
+                        
+                        <!-- Image Capture -->
+                        <div class="mb-3">
+                            <label class="form-label">Photos</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="capture-btn" onclick="captureImage()">
+                                    <i class="fas fa-camera me-1"></i>Take Photo
+                                </button>
+                                <input type="file" id="imageInput" name="images" multiple accept="image/*" style="display: none;">
+                                <button type="button" class="capture-btn" onclick="document.getElementById('imageInput').click()">
+                                    <i class="fas fa-upload me-1"></i>Upload Photos
+                                </button>
+                            </div>
+                            <div id="imagePreview" class="media-preview"></div>
+                        </div>
+
+                        <!-- Video Capture -->
+                        <div class="mb-3">
+                            <label class="form-label">Videos</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="capture-btn" onclick="captureVideo()">
+                                    <i class="fas fa-video me-1"></i>Record Video
+                                </button>
+                                <input type="file" id="videoInput" name="videos" multiple accept="video/*" style="display: none;">
+                                <button type="button" class="capture-btn" onclick="document.getElementById('videoInput').click()">
+                                    <i class="fas fa-upload me-1"></i>Upload Videos
+                                </button>
+                            </div>
+                            <div id="videoPreview" class="media-preview"></div>
+                        </div>
+
+                        <!-- Audio Capture -->
+                        <div class="mb-3">
+                            <label class="form-label">Audio Messages</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="capture-btn" id="recordAudioBtn" onclick="toggleAudioRecording()">
+                                    <i class="fas fa-microphone me-1"></i>Record Audio
+                                </button>
+                                <input type="file" id="audioInput" name="audio_files" multiple accept="audio/*" style="display: none;">
+                                <button type="button" class="capture-btn" onclick="document.getElementById('audioInput').click()">
+                                    <i class="fas fa-upload me-1"></i>Upload Audio
+                                </button>
+                            </div>
+                            <div id="audioPreview" class="media-preview"></div>
+                        </div>
+                    </div>
+
+                    <!-- Reporter Information -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-user me-2"></i>Your Information (Optional)
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="reporter_name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="reporter_name" name="reporter_name" 
+                                       placeholder="Your name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="reporter_phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="reporter_phone" name="reporter_phone" 
+                                       placeholder="Your phone number">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Failure Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden video element for recording -->
+    <video id="videoElement" style="display: none;" autoplay muted></video>
+    <audio id="audioElement" style="display: none;"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        let stream = null;
+
+        // File input handlers
+        document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+        document.getElementById('videoInput').addEventListener('change', handleVideoUpload);
+        document.getElementById('audioInput').addEventListener('change', handleAudioUpload);
+
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    displayMedia(file, 'image');
+                }
+            }
+        }
+
+        function handleVideoUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('video/')) {
+                    displayMedia(file, 'video');
+                }
+            }
+        }
+
+        function handleAudioUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('audio/')) {
+                    displayMedia(file, 'audio');
+                }
+            }
+        }
+
+        function displayMedia(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                mediaItem.dataset.file = file.name;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-media';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = () => mediaItem.remove();
+
+                if (type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    mediaItem.appendChild(img);
+                    document.getElementById('imagePreview').appendChild(mediaItem);
+                } else if (type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = e.target.result;
+                    video.controls = true;
+                    mediaItem.appendChild(video);
+                    document.getElementById('videoPreview').appendChild(mediaItem);
+                } else if (type === 'audio') {
+                    const audio = document.createElement('audio');
+                    audio.src = e.target.result;
+                    audio.controls = true;
+                    mediaItem.appendChild(audio);
+                    document.getElementById('audioPreview').appendChild(mediaItem);
+                }
+
+                mediaItem.appendChild(removeBtn);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function captureImage() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('videoElement');
+                video.srcObject = stream;
+                
+                // Create canvas to capture image
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0);
+                    
+                    canvas.toBlob((blob) => {
+                        const file = new File([blob], `captured_image_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                        displayMedia(file, 'image');
+                        stopStream();
+                    }, 'image/jpeg');
+                });
+            } catch (error) {
+                alert('Camera access denied. Please upload photos manually.');
+            }
+        }
+
+        async function captureVideo() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const video = document.getElementById('videoElement');
+                video.srcObject = stream;
+                
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const file = new File([blob], `captured_video_${Date.now()}.webm`, { type: 'video/webm' });
+                    displayMedia(file, 'video');
+                    stopStream();
+                };
+                
+                mediaRecorder.start();
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                }, 10000); // Record for 10 seconds
+                
+            } catch (error) {
+                alert('Camera/microphone access denied. Please upload videos manually.');
+            }
+        }
+
+        async function toggleAudioRecording() {
+            const btn = document.getElementById('recordAudioBtn');
+            
+            if (!isRecording) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recordedChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                        const file = new File([blob], `captured_audio_${Date.now()}.webm`, { type: 'audio/webm' });
+                        displayMedia(file, 'audio');
+                        stopStream();
+                        btn.innerHTML = '<i class="fas fa-microphone me-1"></i>Record Audio';
+                        btn.style.background = '#28a745';
+                        isRecording = false;
+                    };
+                    
+                    mediaRecorder.start();
+                    btn.innerHTML = '<i class="fas fa-stop me-1"></i>Stop Recording';
+                    btn.style.background = '#dc3545';
+                    isRecording = true;
+                    
+                } catch (error) {
+                    alert('Microphone access denied. Please upload audio files manually.');
+                }
+            } else {
+                mediaRecorder.stop();
+            }
+        }
+
+        function stopStream() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        // Form validation
+        document.getElementById('failureForm').addEventListener('submit', function(e) {
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                e.preventDefault();
+                alert('Please provide a description of the failure.');
+                return false;
+            }
+        });
+
+        // Auto-save form data to localStorage
+        const formInputs = document.querySelectorAll('#failureForm input, #failureForm textarea, #failureForm select');
+        formInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                localStorage.setItem('qr_form_' + this.name, this.value);
+            });
+            
+            // Restore saved data
+            const savedValue = localStorage.getItem('qr_form_' + input.name);
+            if (savedValue) {
+                input.value = savedValue;
+            }
+        });
+
+        // Clear saved data on successful submission
+        document.getElementById('failureForm').addEventListener('submit', function() {
+            formInputs.forEach(input => {
+                localStorage.removeItem('qr_form_' + input.name);
+            });
+        });
+    </script>
+</body>
+</html> 

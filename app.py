@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, send_from_directory, Response
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, send_from_directory, Response, send_file
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -12,6 +12,9 @@ from flask import abort
 from werkzeug.utils import secure_filename
 import csv
 from io import StringIO
+import qrcode
+import io
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -3208,6 +3211,176 @@ def api_quick_assets_tags():
             tags = [tag.strip() for tag in equipment.tags.split(',') if tag.strip()]
             all_tags.update(tags)
     return jsonify(sorted(all_tags))
+
+@app.route('/quick-maintenance-schedule', methods=['GET', 'POST'])
+@login_required
+def quick_maintenance_schedule():
+    """Quick maintenance scheduling from dashboard"""
+    if request.method == 'POST':
+        data = request.form
+        equipment_id = data.get('equipment_id')
+        frequency = data.get('frequency')
+        frequency_value = data.get('frequency_value', 1)
+        description = data.get('description')
+        next_due = data.get('next_due')
+        
+        if not all([equipment_id, frequency, description, next_due]):
+            flash('Please fill in all required fields.', 'error')
+            return redirect(url_for('quick_maintenance_schedule'))
+        
+        try:
+            equipment = Equipment.query.get_or_404(equipment_id)
+            schedule = MaintenanceSchedule(
+                equipment_id=equipment.id,
+                frequency=frequency,
+                frequency_value=int(frequency_value),
+                description=description,
+                estimated_duration=data.get('estimated_duration'),
+                next_due=datetime.strptime(next_due, '%Y-%m-%dT%H:%M'),
+                is_active=True
+            )
+            db.session.add(schedule)
+            db.session.commit()
+            flash(f'Maintenance schedule created for {equipment.name}!', 'success')
+            return redirect(url_for('equipment_detail', id=equipment.id))
+        except Exception as e:
+            flash(f'Error creating maintenance schedule: {str(e)}', 'error')
+            return redirect(url_for('quick_maintenance_schedule'))
+    
+    # GET request - show form
+    equipment_list = Equipment.query.filter_by(status='operational').order_by(Equipment.name).all()
+    return render_template('quick_maintenance_schedule.html', equipment_list=equipment_list)
+
+@app.route('/qr-report/<equipment_id>', methods=['GET', 'POST'])
+def qr_failure_report(equipment_id):
+    """QR code failure reporting page"""
+    equipment = Equipment.query.get_or_404(equipment_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            description = request.form.get('description', '').strip()
+            failure_type = request.form.get('failure_type', 'mechanical')
+            urgency = request.form.get('urgency', 'high')
+            reporter_name = request.form.get('reporter_name', '').strip()
+            reporter_phone = request.form.get('reporter_phone', '').strip()
+            
+            if not description:
+                flash('Please provide a description of the failure.', 'error')
+                return render_template('qr_failure_report.html', equipment=equipment)
+            
+            # Handle file uploads
+            images = []
+            videos = []
+            audio_files = []
+            
+            # Handle image uploads
+            if 'images' in request.files:
+                for file in request.files.getlist('images'):
+                    if file and file.filename:
+                        file_path = save_uploaded_file(file, 'static/uploads/work_orders', 'image')
+                        if file_path:
+                            images.append(file_path)
+            
+            # Handle video uploads
+            if 'videos' in request.files:
+                for file in request.files.getlist('videos'):
+                    if file and file.filename:
+                        file_path = save_uploaded_file(file, 'static/uploads/work_orders', 'video')
+                        if file_path:
+                            videos.append(file_path)
+            
+            # Handle audio uploads
+            if 'audio_files' in request.files:
+                for file in request.files.getlist('audio_files'):
+                    if file and file.filename:
+                        file_path = save_uploaded_file(file, 'static/uploads/work_orders', 'audio')
+                        if file_path:
+                            audio_files.append(file_path)
+            
+            # Create work order
+            work_order = WorkOrder(
+                work_order_number=generate_work_order_number(),
+                title=f"QR Report: {failure_type.title()} Failure - {equipment.name}",
+                description=f"Failure reported via QR code:\n\n{description}\n\nReporter: {reporter_name or 'Anonymous'}\nPhone: {reporter_phone or 'Not provided'}",
+                priority='urgent' if urgency == 'high' else 'high',
+                status='open',
+                type='corrective',
+                equipment_id=equipment.id,
+                created_by_id=1,  # Default admin user, you might want to handle this differently
+                scheduled_date=datetime.now(),
+                due_date=datetime.now() + timedelta(hours=4) if urgency == 'high' else datetime.now() + timedelta(days=1),
+                images=','.join(images) if images else None,
+                videos=','.join(videos) if videos else None,
+                voice_notes=','.join(audio_files) if audio_files else None
+            )
+            
+            db.session.add(work_order)
+            
+            # Update equipment status to maintenance if it was operational
+            if equipment.status == 'operational':
+                equipment.status = 'maintenance'
+                equipment.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Failure report submitted successfully! Work Order #{work_order.work_order_number} has been created.', 'success')
+            return render_template('qr_failure_report_success.html', work_order=work_order, equipment=equipment)
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error submitting report: {str(e)}', 'error')
+            return render_template('qr_failure_report.html', equipment=equipment)
+    
+    return render_template('qr_failure_report.html', equipment=equipment)
+
+@app.route('/api/qr-equipment/<equipment_id>')
+def api_qr_equipment(equipment_id):
+    """API endpoint for QR code equipment data"""
+    equipment = Equipment.query.get_or_404(equipment_id)
+    return jsonify(equipment.to_dict())
+
+@app.route('/qr-image/<equipment_id>')
+def qr_image(equipment_id):
+    qr_url = request.host_url.rstrip('/') + f'/qr-report/{equipment_id}'
+    img = qrcode.make(qr_url)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
+@app.route('/generate-qr/<equipment_id>')
+@login_required
+def generate_qr_code(equipment_id):
+    equipment = Equipment.query.get_or_404(equipment_id)
+    qr_url = request.host_url.rstrip('/') + f'/qr-report/{equipment.id}'
+    # Generate QR code as data URI
+    img = qrcode.make(qr_url)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    img_data = f"data:image/png;base64,{img_b64}"
+    return render_template('generate_qr.html', equipment=equipment, qr_url=qr_url, qr_img=img_data)
+
+@app.route('/api/generate-qr/<equipment_id>')
+@login_required
+def api_generate_qr(equipment_id):
+    """API endpoint to get QR code data"""
+    equipment = Equipment.query.get_or_404(equipment_id)
+    qr_url = request.host_url.rstrip('/') + f'/qr-report/{equipment.id}'
+    
+    return jsonify({
+        'equipment_id': equipment.id,
+        'equipment_name': equipment.name,
+        'qr_url': qr_url,
+        'qr_data': f"Equipment: {equipment.name}\nID: {equipment.equipment_id}\nLocation: {equipment.location or 'Not specified'}\nReport Issue: {qr_url}"
+    })
+
+@app.route('/test-qr')
+def test_qr():
+    """Test QR code generation"""
+    test_url = request.host_url.rstrip('/') + '/qr-report/1'
+    return render_template('test_qr.html', qr_url=test_url)
 
 if __name__ == '__main__':
     print(os.getenv('DATABASE_URL'))

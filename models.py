@@ -512,4 +512,193 @@ class Team(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'members': [user.id for user in self.members]
+        }
+
+# WhatsApp Integration Models
+class WhatsAppUser(db.Model):
+    __tablename__ = 'whatsapp_users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    whatsapp_number = db.Column(db.String(20), unique=True, nullable=False)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_code = db.Column(db.String(6))
+    verification_expires = db.Column(db.DateTime)
+    preferred_language = db.Column(db.String(10), default='en')  # en, es, hi, ar, etc.
+    notification_preferences = db.Column(db.Text)  # JSON string for notification settings
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='whatsapp_profile')
+    messages = db.relationship('WhatsAppMessage', backref='whatsapp_user', lazy=True)
+    
+    def __repr__(self):
+        return f'<WhatsAppUser {self.whatsapp_number}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'whatsapp_number': self.whatsapp_number,
+            'is_verified': self.is_verified,
+            'preferred_language': self.preferred_language,
+            'notification_preferences': self.notification_preferences,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class WhatsAppMessage(db.Model):
+    __tablename__ = 'whatsapp_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    whatsapp_user_id = db.Column(db.Integer, db.ForeignKey('whatsapp_users.id'), nullable=False)
+    message_type = db.Column(db.String(20), nullable=False)  # text, image, video, audio, document, button
+    direction = db.Column(db.String(10), nullable=False)  # inbound, outbound
+    content = db.Column(db.Text, nullable=False)
+    media_url = db.Column(db.String(500))  # For media messages
+    media_type = db.Column(db.String(20))  # image, video, audio, document
+    work_order_id = db.Column(db.Integer, db.ForeignKey('work_orders.id'))  # Link to work order
+    maintenance_schedule_id = db.Column(db.Integer, db.ForeignKey('maintenance_schedules.id'))  # Link to maintenance schedule
+    template_id = db.Column(db.String(100))  # WhatsApp template ID
+    status = db.Column(db.String(20), default='sent')  # sent, delivered, read, failed
+    whatsapp_message_id = db.Column(db.String(100))  # WhatsApp's message ID
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    work_order = db.relationship('WorkOrder', backref='whatsapp_messages')
+    maintenance_schedule = db.relationship('MaintenanceSchedule', backref='whatsapp_messages')
+    
+    def __repr__(self):
+        return f'<WhatsAppMessage {self.id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'whatsapp_user_id': self.whatsapp_user_id,
+            'message_type': self.message_type,
+            'direction': self.direction,
+            'content': self.content,
+            'media_url': self.media_url,
+            'media_type': self.media_type,
+            'work_order_id': self.work_order_id,
+            'maintenance_schedule_id': self.maintenance_schedule_id,
+            'template_id': self.template_id,
+            'status': self.status,
+            'whatsapp_message_id': self.whatsapp_message_id,
+            'created_at': self.created_at.isoformat()
+        }
+
+class WhatsAppTemplate(db.Model):
+    __tablename__ = 'whatsapp_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    category = db.Column(db.String(50), nullable=False)  # work_order, maintenance, emergency, general
+    template_id = db.Column(db.String(100), nullable=False, unique=True)  # WhatsApp template ID
+    language = db.Column(db.String(10), default='en')
+    content = db.Column(db.Text, nullable=False)  # Template content with variables
+    variables = db.Column(db.Text)  # JSON string of required variables
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<WhatsAppTemplate {self.name}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'category': self.category,
+            'template_id': self.template_id,
+            'language': self.language,
+            'content': self.content,
+            'variables': self.variables,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class NotificationLog(db.Model):
+    __tablename__ = 'notification_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    notification_type = db.Column(db.String(50), nullable=False)  # whatsapp, email, sms
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipient_whatsapp_id = db.Column(db.Integer, db.ForeignKey('whatsapp_users.id'))
+    subject = db.Column(db.String(200))
+    content = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, sent, delivered, failed
+    error_message = db.Column(db.Text)
+    work_order_id = db.Column(db.Integer, db.ForeignKey('work_orders.id'))
+    maintenance_schedule_id = db.Column(db.Integer, db.ForeignKey('maintenance_schedules.id'))
+    sent_at = db.Column(db.DateTime)
+    delivered_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    recipient = db.relationship('User', backref='notifications')
+    recipient_whatsapp = db.relationship('WhatsAppUser', backref='notifications')
+    work_order = db.relationship('WorkOrder', backref='notifications')
+    maintenance_schedule = db.relationship('MaintenanceSchedule', backref='notifications')
+    
+    def __repr__(self):
+        return f'<NotificationLog {self.id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'notification_type': self.notification_type,
+            'recipient_id': self.recipient_id,
+            'recipient_whatsapp_id': self.recipient_whatsapp_id,
+            'subject': self.subject,
+            'content': self.content,
+            'status': self.status,
+            'error_message': self.error_message,
+            'work_order_id': self.work_order_id,
+            'maintenance_schedule_id': self.maintenance_schedule_id,
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'delivered_at': self.delivered_at.isoformat() if self.delivered_at else None,
+            'created_at': self.created_at.isoformat()
+        }
+
+class EmergencyBroadcast(db.Model):
+    __tablename__ = 'emergency_broadcasts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    priority = db.Column(db.String(20), default='high')  # low, medium, high, critical
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'))
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
+    sent_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipients = db.Column(db.Text)  # JSON string of recipient IDs or 'all'
+    is_active = db.Column(db.Boolean, default=True)
+    expires_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    equipment = db.relationship('Equipment', backref='emergency_broadcasts')
+    location = db.relationship('Location', backref='emergency_broadcasts')
+    sent_by = db.relationship('User', backref='sent_emergency_broadcasts')
+    
+    def __repr__(self):
+        return f'<EmergencyBroadcast {self.title}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'message': self.message,
+            'priority': self.priority,
+            'equipment_id': self.equipment_id,
+            'location_id': self.location_id,
+            'sent_by_id': self.sent_by_id,
+            'recipients': self.recipients,
+            'is_active': self.is_active,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'created_at': self.created_at.isoformat()
         } 

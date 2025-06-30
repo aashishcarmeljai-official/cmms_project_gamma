@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate QR Code - {{ equipment.name }}{% endblock %}
+
+{% block extra_head %}
+    {{ super() }}
+    <style>
+        .qr-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .qr-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .qr-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .qr-body {
+            padding: 40px;
+        }
+        .qr-code-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        #qrCode {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        .equipment-info {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .download-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .btn-download {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            margin: 5px;
+            font-weight: 600;
+        }
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.4);
+            color: white;
+        }
+        .qr-instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="qr-container">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/equipment">Equipment</a></li>
+                        <li class="breadcrumb-item"><a href="/equipment/{{ equipment.id }}">{{ equipment.name }}</a></li>
+                        <li class="breadcrumb-item active">Generate QR Code</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-qrcode text-primary me-2"></i>
+                    Generate QR Code for {{ equipment.name }}
+                </h1>
+                <p class="text-muted">Create a QR code for quick failure reporting</p>
+            </div>
+        </div>
+
+        <div class="qr-card">
+            <!-- Header -->
+            <div class="qr-header">
+                <i class="fas fa-qrcode fa-3x mb-3"></i>
+                <h2 class="mb-2">Failure Reporting QR Code</h2>
+                <p class="mb-0">Scan this QR code to quickly report issues with {{ equipment.name }}</p>
+            </div>
+
+            <!-- Body -->
+            <div class="qr-body">
+                <!-- Equipment Information -->
+                <div class="equipment-info">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cog me-2"></i>Equipment Details
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Name:</strong> {{ equipment.name }}</p>
+                            <p class="mb-2"><strong>ID:</strong> {{ equipment.equipment_id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Location:</strong> {{ equipment.location or 'Not specified' }}</p>
+                            <p class="mb-2"><strong>Category:</strong> {{ equipment.category }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QR Code Display -->
+                <div class="qr-code-container">
+                    <h5 class="mb-3">
+                        <i class="fas fa-mobile-alt me-2"></i>QR Code for Mobile Scanning
+                    </h5>
+                    <div id="qrCode">
+                        <img src="{{ qr_img }}" alt="QR Code" style="max-width: 300px; width: 100%; height: auto; display: block; margin: 0 auto; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    </div>
+                    <p class="text-muted mt-3">
+                        <strong>URL:</strong> <code>{{ qr_url }}</code>
+                    </p>
+                </div>
+
+                <!-- Download Options -->
+                <div class="download-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-download me-2"></i>Download Options
+                    </h5>
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <a class="btn btn-download" href="{{ qr_img }}" download="QR_{{ equipment.equipment_id }}_{{ equipment.name|replace(' ', '_') }}.png">
+                            <i class="fas fa-image me-2"></i>Download PNG
+                        </a>
+                        <button class="btn btn-download" onclick="copyURL()">
+                            <i class="fas fa-copy me-2"></i>Copy URL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="qr-instructions">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2"></i>How to Use This QR Code
+                    </h5>
+                    <ol class="mb-0">
+                        <li><strong>Print the QR code</strong> and attach it to the equipment</li>
+                        <li><strong>Scan with any smartphone</strong> using the camera app or QR scanner</li>
+                        <li><strong>Fill out the failure report</strong> with photos, videos, or audio</li>
+                        <li><strong>Submit the report</strong> to automatically create a work order</li>
+                    </ol>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center mt-4">
+                    <a href="/equipment/{{ equipment.id }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Equipment
+                    </a>
+                    <a href="/equipment" class="btn btn-primary">
+                        <i class="fas fa-list me-2"></i>Equipment List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        function copyURL() {
+            const qrUrl = '{{ qr_url }}';
+            navigator.clipboard.writeText(qrUrl).then(function() {
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(function(err) {
+                alert('Failed to copy URL: ' + err);
+            });
+        }
+    </script>
+{% endblock %} 

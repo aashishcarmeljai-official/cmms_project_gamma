@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Test</title>
+    <!-- Multiple CDN sources for QRCode library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        // Fallback if first CDN fails
+        if (typeof QRCode === 'undefined') {
+            document.write('<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"><\/script>');
+        }
+    </script>
+    <script>
+        // Second fallback
+        if (typeof QRCode === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #qrCode {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code Test</h1>
+    
+    <div class="info">
+        <p><strong>Test URL:</strong> {{ qr_url }}</p>
+        <p><strong>QRCode Library:</strong> <span id="libraryStatus">Checking...</span></p>
+    </div>
+    
+    <div id="qrCode">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading QR Code...</p>
+        </div>
+    </div>
+    
+    <div id="status"></div>
+    
+    <script>
+        // Wait for QRCode library to load
+        function waitForQRCode(callback, maxAttempts = 10) {
+            let attempts = 0;
+            
+            function checkQRCode() {
+                attempts++;
+                console.log(`Checking for QRCode library (attempt ${attempts})`);
+                
+                if (typeof QRCode !== 'undefined') {
+                    console.log('QRCode library found!');
+                    callback();
+                } else if (attempts < maxAttempts) {
+                    console.log('QRCode library not found, retrying...');
+                    setTimeout(checkQRCode, 500);
+                } else {
+                    console.error('QRCode library failed to load after all attempts');
+                    const qrContainer = document.getElementById('qrCode');
+                    const libraryStatus = document.getElementById('libraryStatus');
+                    const status = document.getElementById('status');
+                    
+                    libraryStatus.textContent = 'FAILED TO LOAD';
+                    libraryStatus.style.color = 'red';
+                    status.innerHTML = `
+                        <div style="color: red; text-align: left; max-width: 400px; margin: 0 auto;">
+                            <p><strong>QR Code library failed to load.</strong></p>
+                            <p>Please try one of the following:</p>
+                            <ul>
+                                <li>Refresh the page</li>
+                                <li>Check your internet connection</li>
+                                <li>Try a different browser</li>
+                                <li>Disable any ad blockers</li>
+                            </ul>
+                            <button onclick="location.reload()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+            
+            checkQRCode();
+        }
+
+        // Generate QR Code
+        function generateQRCode() {
+            const qrUrl = '{{ qr_url }}';
+            const qrContainer = document.getElementById('qrCode');
+            const libraryStatus = document.getElementById('libraryStatus');
+            const status = document.getElementById('status');
+            
+            console.log('Test QR generation for URL:', qrUrl);
+            
+            libraryStatus.textContent = 'LOADED';
+            libraryStatus.style.color = 'green';
+            
+            // Generate QR code
+            QRCode.toCanvas(qrContainer, qrUrl, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR Code generation failed:', error);
+                    status.innerHTML = '<p style="color: red;">Failed to generate QR code: ' + error.message + '</p>';
+                } else {
+                    console.log('QR Code generated successfully');
+                    status.innerHTML = '<p style="color: green;">QR Code generated successfully!</p>';
+                }
+            });
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            waitForQRCode(generateQRCode);
+        });
+    </script>
+</body>
+</html> 
