@@ -14,13 +14,12 @@ python-dotenv==1.0.0
 qrcode[pil]==7.4.2
 SQLAlchemy==2.0.41
 typing_extensions==4.14.0
-Werkzeug==3.3.7
+Werkzeug==3.0.1
 flask-login
 flask-dance
 flask-wtf
 email_validator
 requests==2.31.0
-python-whatsapp-sdk==0.1.0
 googletrans==4.0.0rc1
 celery==5.3.4
 redis==5.0.1
