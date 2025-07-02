@@ -90,6 +90,87 @@
                     </div>
                 </div>
             </div>
+
+            <!-- WhatsApp Integration Section -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fab fa-whatsapp text-success me-2"></i>WhatsApp Integration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.whatsapp_profile %}
+                        <!-- Connected WhatsApp Account -->
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-muted">WhatsApp Number</label>
+                                    <p class="form-control-plaintext">
+                                        <i class="fab fa-whatsapp text-success me-2"></i>
+                                        {{ user.whatsapp_profile.whatsapp_number }}
+                                        {% if user.whatsapp_profile.is_verified %}
+                                            <span class="badge bg-success ms-2">
+                                                <i class="fas fa-check me-1"></i>Verified
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning ms-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Pending Verification
+                                            </span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-muted">Connection Status</label>
+                                    <p class="form-control-plaintext">
+                                        <span class="badge bg-{{ 'success' if user.whatsapp_profile.is_active else 'danger' }}">
+                                            {{ 'Active' if user.whatsapp_profile.is_active else 'Inactive' }}
+                                        </span>
+                                    </p>
+                                </div>
+                                {% if user.whatsapp_profile.preferred_language %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-muted">Preferred Language</label>
+                                    <p class="form-control-plaintext">{{ user.whatsapp_profile.preferred_language.upper() }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="d-grid gap-2">
+                                    {% if not user.whatsapp_profile.is_verified %}
+                                        <a href="{{ url_for('whatsapp_verify') }}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-check-circle me-1"></i>Verify Number
+                                        </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('whatsapp_settings') }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-cog me-1"></i>Manage Settings
+                                    </a>
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#disconnectWhatsAppModal">
+                                        <i class="fas fa-unlink me-1"></i>Disconnect
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- No WhatsApp Connection -->
+                        <div class="text-center py-4">
+                            <i class="fab fa-whatsapp fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted mb-3">WhatsApp Not Connected</h5>
+                            <p class="text-muted mb-4">
+                                Connect your WhatsApp number to receive notifications about work orders, 
+                                maintenance schedules, and emergency broadcasts.
+                            </p>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <a href="{{ url_for('whatsapp_verify') }}" class="btn btn-success">
+                                    <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp
+                                </a>
+                                <a href="{{ url_for('whatsapp_settings') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-cog me-2"></i>WhatsApp Settings
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Account Actions -->
@@ -208,4 +289,35 @@
         </div>
     </div>
 </div>
+
+<!-- Disconnect WhatsApp Modal -->
+{% if user.whatsapp_profile %}
+<div class="modal fade" id="disconnectWhatsAppModal" tabindex="-1" aria-labelledby="disconnectWhatsAppModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="disconnectWhatsAppModalLabel">
+                    <i class="fab fa-whatsapp text-danger me-2"></i>Disconnect WhatsApp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to disconnect your WhatsApp number <strong>{{ user.whatsapp_profile.whatsapp_number }}</strong>?</p>
+                <p class="text-muted small">
+                    This will stop all WhatsApp notifications for work orders, maintenance schedules, and emergency broadcasts.
+                    You can reconnect anytime by visiting the WhatsApp settings.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('whatsapp_disconnect') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-unlink me-1"></i>Disconnect WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %} 

@@ -1,6 +1,6 @@
 # CMMS - Computerized Maintenance Management System
 
-A comprehensive web-based Computerized Maintenance Management System (CMMS) built with Flask, PostgreSQL, and modern web technologies.
+A comprehensive web-based Computerized Maintenance Management System (CMMS) built with Flask, PostgreSQL, and modern web technologies, featuring advanced WhatsApp integration for real-time communication.
 
 ## 🏭 Features
 
@@ -11,6 +11,16 @@ A comprehensive web-based Computerized Maintenance Management System (CMMS) buil
 - **Inventory Management**: Track spare parts and materials with stock levels
 - **User Management**: Role-based access control (Admin, Manager, Technician)
 - **Dashboard Analytics**: Real-time overview of maintenance operations
+
+### 🚀 WhatsApp Integration (NEW!)
+- **Real-Time Notifications**: Instant WhatsApp messages for work order assignments, priority escalations, and parts delivery
+- **Interactive Updates**: Technicians can update work order status and send photos/videos via WhatsApp
+- **Emergency Broadcasts**: Send urgent alerts to all technicians instantly
+- **Multilingual Support**: Automatic translation of notifications in multiple languages
+- **WhatsApp Chatbot**: Full CMMS interaction via WhatsApp commands (`/wo`, `/status`, `/help`)
+- **Maintenance Reminders**: Interactive PM reminders with "Mark as Done" buttons
+- **Checklist Submissions**: Daily/weekly checklists with tappable buttons
+- **Training & Onboarding**: Share training content and SOPs via WhatsApp
 
 ### Equipment Management
 - Equipment registration with unique IDs
@@ -26,12 +36,14 @@ A comprehensive web-based Computerized Maintenance Management System (CMMS) buil
 - Equipment assignment and technician assignment
 - Time tracking and completion notes
 - Parts usage tracking
+- **WhatsApp Integration**: Real-time notifications and status updates
 
 ### Preventive Maintenance
 - Scheduled maintenance tasks
 - Frequency-based scheduling (Daily, Weekly, Monthly, Yearly)
 - Due date tracking and notifications
 - Maintenance history
+- **WhatsApp Reminders**: Interactive maintenance reminders
 
 ### Inventory Management
 - Part number tracking
@@ -47,7 +59,9 @@ A comprehensive web-based Computerized Maintenance Management System (CMMS) buil
 - **Database**: PostgreSQL with SQLAlchemy ORM
 - **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5
 - **Icons**: Font Awesome
-- **Authentication**: Flask-Login (planned)
+- **Authentication**: Flask-Login
+- **WhatsApp Integration**: WhatsApp Business API, googletrans for multilingual support
+- **Background Tasks**: Celery with Redis (optional)
 
 ## 📁 Project Structure
 
@@ -58,20 +72,21 @@ cmms_project_gamma/
 ├── models.py                 # Database models (User, Equipment, WorkOrder, etc.)
 ├── requirements.txt          # Python dependencies
 ├── README.md                # This file
+├── WHATSAPP_INTEGRATION_README.md  # WhatsApp integration guide
+├── migrate_whatsapp_tables.py      # WhatsApp database migration
+├── whatsapp_integration.py         # WhatsApp API integration
+├── whatsapp_notifications.py       # WhatsApp notification handlers
+├── whatsapp_webhook.py             # WhatsApp webhook processor
 ├── .gitignore               # Git ignore file
 ├── templates/               # HTML templates
 │   ├── dashboard.html       # Main dashboard
 │   ├── equipment/           # Equipment templates
-│   │   ├── list.html
-│   │   ├── new.html
-│   │   └── detail.html
 │   ├── work_orders/         # Work order templates
-│   │   ├── list.html
-│   │   ├── new.html
-│   │   └── detail.html
-│   └── inventory/           # Inventory templates
-│       ├── list.html
-│       └── new.html
+│   ├── inventory/           # Inventory templates
+│   └── whatsapp/            # WhatsApp integration templates
+│       ├── verify.html      # WhatsApp verification
+│       ├── settings.html    # WhatsApp settings
+│       └── emergency.html   # Emergency broadcast
 └── static/                  # Static files
     ├── css/
     │   └── style.css        # Custom styles
@@ -110,7 +125,32 @@ python
 >>> exit()
 ```
 
-### 4. Create Initial Admin User
+### 4. WhatsApp Integration Setup (Optional but Recommended)
+
+1. **Set up WhatsApp Business API**:
+   - Create Facebook Developer account
+   - Set up WhatsApp Business API
+   - Get access token and phone number ID
+
+2. **Configure environment variables**:
+   ```bash
+   export WHATSAPP_ACCESS_TOKEN="your_access_token"
+   export WHATSAPP_PHONE_NUMBER_ID="your_phone_number_id"
+   export WHATSAPP_VERIFY_TOKEN="your_verify_token"
+   ```
+
+3. **Run WhatsApp migration**:
+   ```bash
+   python migrate_whatsapp_tables.py
+   ```
+
+4. **Configure webhook**:
+   - Set webhook URL: `https://yourdomain.com/whatsapp/webhook`
+   - Verify token matches your `WHATSAPP_VERIFY_TOKEN`
+
+For detailed WhatsApp setup instructions, see [WHATSAPP_INTEGRATION_README.md](WHATSAPP_INTEGRATION_README.md)
+
+### 5. Create Initial Admin User
 
 ```bash
 python
@@ -130,7 +170,7 @@ python
 >>> exit()
 ```
 
-### 5. Run the Application
+### 6. Run the Application
 
 ```bash
 python app.py
@@ -147,6 +187,13 @@ The CMMS will be available at `http://localhost:5000`
 - **maintenance_schedules**: Preventive maintenance schedules
 - **inventory**: Spare parts and materials
 - **work_order_parts**: Parts used in work orders
+
+### WhatsApp Integration Tables
+- **whatsapp_users**: WhatsApp number verification and preferences
+- **whatsapp_messages**: Incoming and outgoing WhatsApp messages
+- **whatsapp_templates**: Message templates for notifications
+- **notification_logs**: Log of all sent notifications
+- **emergency_broadcasts**: Emergency broadcast messages
 
 ## 🔧 API Endpoints
 
@@ -175,14 +222,34 @@ The CMMS will be available at `http://localhost:5000`
 - `POST /inventory/new` - Create new inventory item
 - `GET /api/inventory` - Inventory API
 
+### WhatsApp Integration
+- `GET /whatsapp/verify` - WhatsApp verification page
+- `POST /whatsapp/verify` - Submit verification
+- `GET /whatsapp/settings` - WhatsApp settings
+- `POST /whatsapp/settings` - Update settings
+- `GET /whatsapp/emergency` - Emergency broadcast page
+- `POST /whatsapp/emergency` - Send emergency broadcast
+- `POST /whatsapp/webhook` - WhatsApp webhook endpoint
+- `POST /api/whatsapp/send-test` - Send test message
+
 ### Analytics
 - `GET /api/dashboard-stats` - Dashboard statistics API
 
+## 💬 WhatsApp Commands
+
+Users can interact with the CMMS directly via WhatsApp:
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/wo [number]` | View work order details | `/wo WO-20241201-ABC123` |
+| `/status [number] [status]` | Update work order status | `/status WO-20241201-ABC123 completed` |
+| `/help` | Show available commands | `/help` |
+
 ## 👥 User Roles
 
-- **Admin**: Full system access, user management
-- **Manager**: Equipment and work order management
-- **Technician**: Work order execution, status updates
+- **Admin**: Full system access, user management, emergency broadcasts
+- **Manager**: Equipment and work order management, WhatsApp templates
+- **Technician**: Work order execution, status updates, WhatsApp interactions
 
 ## 🔒 Security Features
 
@@ -190,32 +257,32 @@ The CMMS will be available at `http://localhost:5000`
 - Role-based access control
 - Session management
 - Input validation and sanitization
+- WhatsApp number verification
+- Secure webhook handling
 
 ## 📈 Future Enhancements
 
-- [ ] User authentication and login system
+- [x] WhatsApp integration for real-time communication
+- [x] Emergency broadcast system
+- [x] Multilingual support
+- [x] Interactive notifications
 - [ ] Advanced reporting and analytics
 - [ ] Mobile-responsive design
 - [ ] Email notifications
 - [ ] File attachments for work orders
-- [ ] Barcode/QR code scanning
-- [ ] Maintenance cost tracking
-- [ ] Equipment lifecycle management
-- [ ] Integration with external systems
-- [ ] Multi-language support
+- [ ] AI-powered chatbot responses
+- [ ] Voice commands integration
 
-## 🤝 Contributing
+## 📞 Support
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+For WhatsApp integration support, see [WHATSAPP_INTEGRATION_README.md](WHATSAPP_INTEGRATION_README.md)
 
-## 📄 License
+For general CMMS support:
+1. Check the application logs
+2. Verify database connectivity
+3. Ensure all environment variables are set correctly
+4. Test WhatsApp integration with `/api/whatsapp/send-test`
 
-This project is open source and available under the [MIT License](LICENSE).
+---
 
-## 🆘 Support
-
-For support and questions, please create an issue in the repository or contact the development team. 
+**Note**: The WhatsApp integration requires a WhatsApp Business API account and proper configuration. See the WhatsApp integration README for detailed setup instructions. 

@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% block title %}WhatsApp Notifications - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                    <li class="breadcrumb-item active">WhatsApp Notifications</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bell text-primary me-2"></i>
+                WhatsApp Notification Logs
+            </h1>
+            <p class="text-muted">Monitor and track all WhatsApp notifications sent through the system</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ notifications.total }}</h4>
+                            <p class="card-text">Total Notifications</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bell fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ notifications.items|selectattr('status', 'equalto', 'delivered')|list|length }}</h4>
+                            <p class="card-text">Delivered</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ notifications.items|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                            <p class="card-text">Pending</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ notifications.items|selectattr('status', 'equalto', 'failed')|list|length }}</h4>
+                            <p class="card-text">Failed</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status_filter" class="form-label">Status</label>
+                            <select class="form-select" id="status_filter" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                                <option value="sent" {{ 'selected' if request.args.get('status') == 'sent' }}>Sent</option>
+                                <option value="delivered" {{ 'selected' if request.args.get('status') == 'delivered' }}>Delivered</option>
+                                <option value="failed" {{ 'selected' if request.args.get('status') == 'failed' }}>Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ request.args.get('date_from', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                   value="{{ request.args.get('date_to', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter me-2"></i>Filter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Notification History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if notifications.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Recipient</th>
+                                        <th>Type</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Related Item</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for notification in notifications.items %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <small class="text-muted">{{ notification.created_at.strftime('%Y-%m-%d') }}</small>
+                                                <small>{{ notification.created_at.strftime('%H:%M:%S') }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if notification.recipient %}
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-user me-2"></i>
+                                                    <div>
+                                                        <div>{{ notification.recipient.first_name }} {{ notification.recipient.last_name }}</div>
+                                                        <small class="text-muted">{{ notification.recipient.email }}</small>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">User not found</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="fab fa-whatsapp me-1"></i>{{ notification.notification_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ notification.subject or 'No subject' }}">
+                                                {{ notification.subject or 'No subject' }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if notification.status == 'delivered' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Delivered
+                                                </span>
+                                            {% elif notification.status == 'sent' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-paper-plane me-1"></i>Sent
+                                                </span>
+                                            {% elif notification.status == 'pending' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                            {% elif notification.status == 'failed' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Failed
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ notification.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if notification.work_order %}
+                                                <a href="{{ url_for('work_order_detail', id=notification.work_order.id) }}" 
+                                                   class="text-decoration-none">
+                                                    <i class="fas fa-clipboard-list me-1"></i>
+                                                    {{ notification.work_order.work_order_number }}
+                                                </a>
+                                            {% elif notification.maintenance_schedule %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Maintenance Schedule
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">General</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-primary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#notificationModal{{ notification.id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if notification.status == 'failed' %}
+                                                    <button type="button" class="btn btn-outline-warning" 
+                                                            onclick="retryNotification({{ notification.id }})">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if notifications.pages > 1 %}
+                        <nav aria-label="Notification pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if notifications.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('whatsapp_notifications', page=notifications.prev_num, **request.args) }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in notifications.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != notifications.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('whatsapp_notifications', page=page_num, **request.args) }}">
+                                                    {{ page_num }}
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if notifications.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('whatsapp_notifications', page=notifications.next_num, **request.args) }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-bell fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No notifications found</h5>
+                            <p class="text-muted">There are no WhatsApp notifications matching your criteria.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Detail Modals -->
+{% for notification in notifications.items %}
+<div class="modal fade" id="notificationModal{{ notification.id }}" tabindex="-1" aria-labelledby="notificationModalLabel{{ notification.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationModalLabel{{ notification.id }}">
+                    <i class="fas fa-bell me-2"></i>Notification Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>ID:</strong></td>
+                                <td>{{ notification.id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type:</strong></td>
+                                <td>{{ notification.notification_type.title() }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    {% if notification.status == 'delivered' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% elif notification.status == 'sent' %}
+                                        <span class="badge bg-primary">Sent</span>
+                                    {% elif notification.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif notification.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ notification.status.title() }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created:</strong></td>
+                                <td>{{ notification.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% if notification.sent_at %}
+                            <tr>
+                                <td><strong>Sent:</strong></td>
+                                <td>{{ notification.sent_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if notification.delivered_at %}
+                            <tr>
+                                <td><strong>Delivered:</strong></td>
+                                <td>{{ notification.delivered_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Recipient Information</h6>
+                        {% if notification.recipient %}
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ notification.recipient.first_name }} {{ notification.recipient.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ notification.recipient.email }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Role:</strong></td>
+                                <td>{{ notification.recipient.role.title() }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Department:</strong></td>
+                                <td>{{ notification.recipient.department or 'Not specified' }}</td>
+                            </tr>
+                        </table>
+                        {% else %}
+                        <p class="text-muted">Recipient information not available</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Message Content</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ notification.subject or 'No subject' }}</h6>
+                                <p class="card-text">{{ notification.content }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if notification.error_message %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-danger">Error Information</h6>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            {{ notification.error_message }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if notification.work_order or notification.maintenance_schedule %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Related Item</h6>
+                        {% if notification.work_order %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-clipboard-list me-2"></i>
+                                    Work Order: {{ notification.work_order.work_order_number }}
+                                </h6>
+                                <p class="card-text">{{ notification.work_order.title }}</p>
+                                <a href="{{ url_for('work_order_detail', id=notification.work_order.id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    View Work Order
+                                </a>
+                            </div>
+                        </div>
+                        {% elif notification.maintenance_schedule %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-calendar me-2"></i>
+                                    Maintenance Schedule
+                                </h6>
+                                <p class="card-text">{{ notification.maintenance_schedule.description }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {% if notification.status == 'failed' %}
+                <button type="button" class="btn btn-warning" onclick="retryNotification({{ notification.id }})">
+                    <i class="fas fa-redo me-1"></i>Retry
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function retryNotification(notificationId) {
+    if (confirm('Are you sure you want to retry this failed notification?')) {
+        fetch(`/api/whatsapp/retry-notification/${notificationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Notification retry initiated successfully!');
+                location.reload();
+            } else {
+                alert('Error retrying notification: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error retrying notification');
+        });
+    }
+}
+</script>
+{% endblock %} 

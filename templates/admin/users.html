@@ -23,7 +23,7 @@
     <!-- Search and Filter -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+            <h6 class="m-0 font-weight-bold text-white">Search & Filter</h6>
         </div>
         <div class="card-body">
             <form method="GET" class="row g-3">
@@ -36,7 +36,7 @@
                     <label for="role_filter" class="form-label">Role</label>
                     <select class="form-select" id="role_filter" name="role">
                         <option value="">All Roles</option>
-                        <option value="administrator" {{ 'selected' if request.args.get('role') == 'administrator' }}>Administrator</option>
+                        <option value="admin" {{ 'selected' if request.args.get('role') == 'admin' }}>Administrator</option>
                         <option value="manager" {{ 'selected' if request.args.get('role') == 'manager' }}>Manager</option>
                         <option value="technician" {{ 'selected' if request.args.get('role') == 'technician' }}>Technician</option>
                         <option value="viewer" {{ 'selected' if request.args.get('role') == 'viewer' }}>Viewer</option>
@@ -75,7 +75,7 @@
     <!-- Users Table -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Users ({{ users|length }} total)</h6>
+            <h6 class="m-0 font-weight-bold text-white">Users ({{ users|length }} total)</h6>
         </div>
         <div class="card-body">
             {% if users %}
@@ -111,9 +111,19 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-{{ 'danger' if user.role == 'administrator' else 'warning' if user.role == 'manager' else 'info' if user.role == 'technician' else 'secondary' }}">
+                                {% if user.id != current_user.id %}
+                                <select class="form-select form-select-sm" onchange="changeUserRole({{ user.id }}, this.value)" style="width: auto;">
+                                    <option value="admin" {{ 'selected' if user.role == 'admin' }}>Administrator</option>
+                                    <option value="manager" {{ 'selected' if user.role == 'manager' }}>Manager</option>
+                                    <option value="technician" {{ 'selected' if user.role == 'technician' }}>Technician</option>
+                                    <option value="viewer" {{ 'selected' if user.role == 'viewer' }}>Viewer</option>
+                                </select>
+                                {% else %}
+                                <span class="badge bg-danger">
                                     {{ user.role.title() }}
                                 </span>
+                                <small class="text-muted d-block">(You)</small>
+                                {% endif %}
                             </td>
                             <td>{{ user.department.title() if user.department else 'N/A' }}</td>
                             <td>
@@ -217,7 +227,7 @@
                                 <label for="role" class="form-label">Role *</label>
                                 <select class="form-select" id="role" name="role" required>
                                     <option value="">Select Role</option>
-                                    <option value="administrator">Administrator</option>
+                                    <option value="admin">Administrator</option>
                                     <option value="manager">Manager</option>
                                     <option value="technician">Technician</option>
                                     <option value="viewer">Viewer</option>
@@ -307,7 +317,7 @@
                             <div class="mb-3">
                                 <label for="edit_role" class="form-label">Role *</label>
                                 <select class="form-select" id="edit_role" name="role" required>
-                                    <option value="administrator">Administrator</option>
+                                    <option value="admin">Administrator</option>
                                     <option value="manager">Manager</option>
                                     <option value="technician">Technician</option>
                                     <option value="viewer">Viewer</option>
@@ -400,6 +410,50 @@ function resetPassword(userId) {
                     alert('Error: ' + data.message);
                 }
             });
+    }
+}
+
+function changeUserRole(userId, newRole) {
+    if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+        fetch(`/admin/users/${userId}/change-role`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ role: newRole })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+                toast.innerHTML = `
+                    <strong>Success!</strong> User role updated to ${newRole}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(toast);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            } else {
+                alert('Error: ' + data.message);
+                // Reload to reset the dropdown
+                location.reload();
+            }
+        })
+        .catch(error => {
+            alert('Error updating user role. Please try again.');
+            location.reload();
+        });
+    } else {
+        // Reset the dropdown to the original value
+        location.reload();
     }
 }
 </script>

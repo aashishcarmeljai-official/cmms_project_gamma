@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Broadcast{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Emergency Broadcast
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> Emergency broadcasts will be sent to all verified WhatsApp users immediately.
+                        Use this feature only for critical safety issues or urgent equipment failures.
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Emergency Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Critical Equipment Failure" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Emergency Message *</label>
+                            <textarea class="form-control" id="message" name="message" rows="4" 
+                                      placeholder="Describe the emergency situation and required actions..." required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority Level *</label>
+                                    <select class="form-select" id="priority" name="priority" required>
+                                        <option value="low">Low - Informational</option>
+                                        <option value="medium">Medium - Attention Required</option>
+                                        <option value="high" selected>High - Urgent Action</option>
+                                        <option value="critical">Critical - Immediate Response</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="recipients" class="form-label">Recipients</label>
+                                    <select class="form-select" id="recipients" name="recipients">
+                                        <option value="all" selected>All Technicians</option>
+                                        <option value="specific">Specific Users (Admin Only)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="equipment_id" class="form-label">Related Equipment (Optional)</label>
+                                    <select class="form-select" id="equipment_id" name="equipment_id">
+                                        <option value="">Select Equipment</option>
+                                        {% for equipment in equipment_list %}
+                                        <option value="{{ equipment.id }}">{{ equipment.name }} ({{ equipment.equipment_id }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location_id" class="form-label">Related Location (Optional)</label>
+                                    <select class="form-select" id="location_id" name="location_id">
+                                        <option value="">Select Location</option>
+                                        {% for location in locations %}
+                                        <option value="{{ location.id }}">{{ location.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="expires" name="expires">
+                                <label class="form-check-label" for="expires">
+                                    Set expiration (24 hours from now)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg" onclick="return confirmEmergency()">
+                                <i class="fas fa-broadcast-tower"></i> Send Emergency Broadcast
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Emergency Broadcasts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Priority</th>
+                                    <th>Sent</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- This would be populated with recent broadcasts -->
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        No recent emergency broadcasts
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmEmergency() {
+    const title = document.getElementById('title').value;
+    const message = document.getElementById('message').value;
+    const priority = document.getElementById('priority').value;
+    
+    if (!title || !message) {
+        alert('Please fill in all required fields.');
+        return false;
+    }
+    
+    const priorityText = {
+        'low': 'Low Priority',
+        'medium': 'Medium Priority', 
+        'high': 'High Priority',
+        'critical': 'CRITICAL PRIORITY'
+    };
+    
+    const confirmMessage = `Are you sure you want to send this emergency broadcast?\n\n` +
+                          `Title: ${title}\n` +
+                          `Priority: ${priorityText[priority]}\n` +
+                          `Message: ${message.substring(0, 100)}${message.length > 100 ? '...' : ''}\n\n` +
+                          `This will be sent to all verified WhatsApp users immediately.`;
+    
+    return confirm(confirmMessage);
+}
+
+// Auto-resize textarea
+document.getElementById('message').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+});
+</script>
+{% endblock %} 

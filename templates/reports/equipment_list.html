@@ -20,7 +20,7 @@
     <!-- Equipment Performance Overview -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Equipment Performance Overview</h6>
+            <h6 class="m-0 font-weight-bold text-white">Equipment Performance Overview</h6>
         </div>
         <div class="card-body">
             {% if equipment_stats %}
@@ -185,7 +185,7 @@
         <div class="col-lg-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Performing Equipment</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Top Performing Equipment</h6>
                 </div>
                 <div class="card-body">
                     {% set top_performers = equipment_stats|sort(attribute='completion_rate', reverse=true)[:5] %}
@@ -208,7 +208,7 @@
         <div class="col-lg-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Equipment Needing Attention</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Equipment Needing Attention</h6>
                 </div>
                 <div class="card-body">
                     {% set low_performers = equipment_stats|selectattr('completion_rate', '<', 70)|sort(attribute='completion_rate')[:5] %}

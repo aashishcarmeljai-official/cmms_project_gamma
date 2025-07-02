@@ -77,17 +77,18 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card border-left-{{ 'success' if system_health_data.status == 'healthy' else 'warning' if system_health_data.status == 'warning' else 'danger' }} shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-{{ 'success' if system_health_data.status == 'healthy' else 'warning' if system_health_data.status == 'warning' else 'danger' }} text-uppercase mb-1">
                                 System Health
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(system_health) }}%</div>
+                            <small class="text-muted">{{ system_health_data.status.title() }}</small>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-heartbeat fa-2x text-gray-300"></i>
+                            <i class="fas fa-heartbeat fa-2x text-{{ 'success' if system_health_data.status == 'healthy' else 'warning' if system_health_data.status == 'warning' else 'danger' }}"></i>
                         </div>
                     </div>
                 </div>
@@ -100,7 +101,7 @@
         <div class="col-12">
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Quick Actions</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -136,7 +137,7 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent System Activity</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Recent System Activity</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -176,55 +177,31 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+                    <h6 class="m-0 font-weight-bold text-white">System Status</h6>
                 </div>
                 <div class="card-body">
+                    {% for metric_name, metric_data in system_health_data.metrics.items() %}
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>Database</span>
-                            <span class="badge bg-success">Online</span>
+                            <span>{{ metric_name.title() }}</span>
+                            <span class="badge bg-{{ 'success' if metric_data.status == 'healthy' else 'warning' if metric_data.status == 'warning' else 'danger' }}">
+                                {{ metric_data.status.title() }}
+                            </span>
                         </div>
                         <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                            <div class="progress-bar bg-{{ 'success' if metric_data.status == 'healthy' else 'warning' if metric_data.status == 'warning' else 'danger' }}" 
+                                 style="width: {{ metric_data.score }}%"></div>
                         </div>
+                        <small class="text-muted">{{ metric_data.details }}</small>
                     </div>
-                    
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>File Storage</span>
-                            <span class="badge bg-success">Healthy</span>
-                        </div>
-                        <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 85%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Email Service</span>
-                            <span class="badge bg-success">Active</span>
-                        </div>
-                        <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Backup System</span>
-                            <span class="badge bg-success">Last: 2h ago</span>
-                        </div>
-                        <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 100%"></div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 
             <!-- User Statistics -->
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">User Statistics</h6>
+                    <h6 class="m-0 font-weight-bold text-white">User Statistics</h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -257,7 +234,14 @@
     </div>
 
     <!-- System Alerts -->
-    {% if system_alerts %}
+    {% set critical_issues = [] %}
+    {% for metric_name, metric_data in system_health_data.metrics.items() %}
+        {% if metric_data.status == 'critical' %}
+            {% set _ = critical_issues.append({'title': metric_name.title() + ' Issue', 'message': metric_data.details}) %}
+        {% endif %}
+    {% endfor %}
+    
+    {% if critical_issues %}
     <div class="row">
         <div class="col-12">
             <div class="card shadow border-left-danger">
@@ -265,7 +249,7 @@
                     <h6 class="m-0 font-weight-bold text-danger">System Alerts</h6>
                 </div>
                 <div class="card-body">
-                    {% for alert in system_alerts %}
+                    {% for alert in critical_issues %}
                     <div class="alert alert-danger d-flex align-items-center">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <div>

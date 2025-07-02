@@ -15,6 +15,8 @@ from io import StringIO
 import qrcode
 import io
 import base64
+import json
+from multitenancy import filter_by_company, enforce_company_access
 
 # Load environment variables
 load_dotenv()
@@ -33,7 +35,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 
 # Import models after db initialization
-from models import User, Equipment, WorkOrder, MaintenanceSchedule, Inventory, WorkOrderPart, Location, Team, WorkOrderComment, SOP, SOPChecklistItem, WorkOrderChecklist
+from models import User, Equipment, WorkOrder, MaintenanceSchedule, Inventory, WorkOrderPart, Location, Team, WorkOrderComment, SOP, SOPChecklistItem, WorkOrderChecklist, WhatsAppUser, EmergencyBroadcast, NotificationLog, WhatsAppTemplate, WhatsAppMessage, Company
 
 # Utility functions
 def generate_work_order_number():
@@ -41,19 +43,201 @@ def generate_work_order_number():
     return f"WO-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
 
 def get_dashboard_stats():
-    """Get dashboard statistics"""
+    """Get dashboard statistics (company-scoped)"""
     stats = {
-        'total_equipment': Equipment.query.count(),
-        'operational_equipment': Equipment.query.filter_by(status='operational').count(),
-        'maintenance_equipment': Equipment.query.filter_by(status='maintenance').count(),
-        'out_of_service_equipment': Equipment.query.filter_by(status='out_of_service').count(),
-        'open_work_orders': WorkOrder.query.filter_by(status='open').count(),
-        'in_progress_work_orders': WorkOrder.query.filter_by(status='in_progress').count(),
-        'completed_work_orders': WorkOrder.query.filter_by(status='completed').count(),
-        'total_users': User.query.count(),
-        'low_stock_items': Inventory.query.filter(Inventory.current_stock <= Inventory.minimum_stock).count()
+        'total_equipment': filter_by_company(Equipment.query).count(),
+        'operational_equipment': filter_by_company(Equipment.query).filter_by(status='operational').count(),
+        'maintenance_equipment': filter_by_company(Equipment.query).filter_by(status='maintenance').count(),
+        'out_of_service_equipment': filter_by_company(Equipment.query).filter_by(status='out_of_service').count(),
+        'open_work_orders': filter_by_company(WorkOrder.query).filter_by(status='open').count(),
+        'in_progress_work_orders': filter_by_company(WorkOrder.query).filter_by(status='in_progress').count(),
+        'completed_work_orders': filter_by_company(WorkOrder.query).filter_by(status='completed').count(),
+        'total_users': filter_by_company(User.query).count(),
+        'low_stock_items': filter_by_company(Inventory.query).filter(Inventory.current_stock <= Inventory.minimum_stock).count()
     }
     return stats
+
+def calculate_system_health():
+    """Calculate comprehensive system health score based on multiple metrics"""
+    try:
+        health_metrics = {}
+        total_score = 0
+        max_score = 0
+        
+        # 1. Database Health (25% weight)
+        try:
+            # Test database connection
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
+            db.session.commit()
+            db_health = 100
+            health_metrics['database'] = {'status': 'healthy', 'score': db_health, 'details': 'Database connection successful'}
+        except Exception as e:
+            db_health = 0
+            health_metrics['database'] = {'status': 'critical', 'score': db_health, 'details': f'Database error: {str(e)}'}
+        
+        total_score += db_health * 0.25
+        max_score += 100 * 0.25
+        
+        # 2. Equipment Health (20% weight)
+        try:
+            total_equipment = Equipment.query.count()
+            if total_equipment > 0:
+                operational_equipment = Equipment.query.filter_by(status='operational').count()
+                equipment_health = (operational_equipment / total_equipment) * 100
+            else:
+                equipment_health = 100  # No equipment means no issues
+            
+            health_metrics['equipment'] = {
+                'status': 'healthy' if equipment_health >= 80 else 'warning' if equipment_health >= 60 else 'critical',
+                'score': equipment_health,
+                'details': f'{operational_equipment}/{total_equipment} equipment operational'
+            }
+        except Exception as e:
+            equipment_health = 0
+            health_metrics['equipment'] = {'status': 'critical', 'score': equipment_health, 'details': f'Equipment query error: {str(e)}'}
+        
+        total_score += equipment_health * 0.20
+        max_score += 100 * 0.20
+        
+        # 3. Work Order Efficiency (20% weight)
+        try:
+            total_work_orders = filter_by_company(WorkOrder.query).count()
+            if total_work_orders > 0:
+                completed_work_orders = filter_by_company(WorkOrder.query).filter_by(status='completed').count()
+                overdue_work_orders = filter_by_company(WorkOrder.query).filter(
+                    WorkOrder.due_date < datetime.now(),
+                    WorkOrder.status.in_(['open', 'in_progress'])
+                ).count()
+                
+                # Calculate efficiency based on completion rate and overdue ratio
+                completion_rate = (completed_work_orders / total_work_orders) * 100
+                overdue_penalty = min((overdue_work_orders / total_work_orders) * 100, 50)  # Max 50% penalty
+                work_order_health = max(completion_rate - overdue_penalty, 0)
+            else:
+                work_order_health = 100
+            
+            health_metrics['work_orders'] = {
+                'status': 'healthy' if work_order_health >= 80 else 'warning' if work_order_health >= 60 else 'critical',
+                'score': work_order_health,
+                'details': f'{completed_work_orders}/{total_work_orders} completed, {overdue_work_orders} overdue'
+            }
+        except Exception as e:
+            work_order_health = 0
+            health_metrics['work_orders'] = {'status': 'critical', 'score': work_order_health, 'details': f'Work order query error: {str(e)}'}
+        
+        total_score += work_order_health * 0.20
+        max_score += 100 * 0.20
+        
+        # 4. User Activity (15% weight)
+        try:
+            total_users = User.query.count()
+            if total_users > 0:
+                # Check for users who logged in within last 30 days
+                thirty_days_ago = datetime.now() - timedelta(days=30)
+                active_users = User.query.filter(User.last_login >= thirty_days_ago).count()
+                user_activity_health = (active_users / total_users) * 100
+            else:
+                user_activity_health = 100
+            
+            health_metrics['user_activity'] = {
+                'status': 'healthy' if user_activity_health >= 70 else 'warning' if user_activity_health >= 40 else 'critical',
+                'score': user_activity_health,
+                'details': f'{active_users}/{total_users} users active in last 30 days'
+            }
+        except Exception as e:
+            user_activity_health = 0
+            health_metrics['user_activity'] = {'status': 'critical', 'score': user_activity_health, 'details': f'User activity query error: {str(e)}'}
+        
+        total_score += user_activity_health * 0.15
+        max_score += 100 * 0.15
+        
+        # 5. System Performance (10% weight)
+        try:
+            # Check for recent errors in notification logs
+            recent_errors = NotificationLog.query.filter(
+                NotificationLog.status == 'failed',
+                NotificationLog.created_at >= datetime.now() - timedelta(hours=24)
+            ).count()
+            
+            # Check for recent successful notifications
+            recent_success = NotificationLog.query.filter(
+                NotificationLog.status == 'sent',
+                NotificationLog.created_at >= datetime.now() - timedelta(hours=24)
+            ).count()
+            
+            total_recent = recent_errors + recent_success
+            if total_recent > 0:
+                performance_health = ((total_recent - recent_errors) / total_recent) * 100
+            else:
+                performance_health = 100  # No notifications means no errors
+            
+            health_metrics['performance'] = {
+                'status': 'healthy' if performance_health >= 90 else 'warning' if performance_health >= 70 else 'critical',
+                'score': performance_health,
+                'details': f'{recent_success} successful, {recent_errors} failed notifications in last 24h'
+            }
+        except Exception as e:
+            performance_health = 0
+            health_metrics['performance'] = {'status': 'critical', 'score': performance_health, 'details': f'Performance query error: {str(e)}'}
+        
+        total_score += performance_health * 0.10
+        max_score += 100 * 0.10
+        
+        # 6. Storage Health (10% weight)
+        try:
+            # Check upload directory space (if exists)
+            upload_dir = os.path.join(os.getcwd(), 'static', 'uploads')
+            if os.path.exists(upload_dir):
+                total_size = 0
+                file_count = 0
+                for dirpath, dirnames, filenames in os.walk(upload_dir):
+                    for filename in filenames:
+                        filepath = os.path.join(dirpath, filename)
+                        try:
+                            total_size += os.path.getsize(filepath)
+                            file_count += 1
+                        except OSError:
+                            pass
+                
+                # Simple heuristic: if less than 1GB and less than 1000 files, consider healthy
+                storage_health = 100
+                if total_size > 1024 * 1024 * 1024:  # 1GB
+                    storage_health -= 20
+                if file_count > 1000:
+                    storage_health -= 20
+                storage_health = max(storage_health, 0)
+                
+                health_metrics['storage'] = {
+                    'status': 'healthy' if storage_health >= 80 else 'warning' if storage_health >= 60 else 'critical',
+                    'score': storage_health,
+                    'details': f'{file_count} files, {total_size / (1024*1024):.1f} MB used'
+                }
+            else:
+                storage_health = 100
+                health_metrics['storage'] = {'status': 'healthy', 'score': storage_health, 'details': 'Upload directory not configured'}
+        except Exception as e:
+            storage_health = 0
+            health_metrics['storage'] = {'status': 'critical', 'score': storage_health, 'details': f'Storage check error: {str(e)}'}
+        
+        total_score += storage_health * 0.10
+        max_score += 100 * 0.10
+        
+        # Calculate overall health percentage
+        overall_health = (total_score / max_score) * 100 if max_score > 0 else 0
+        
+        return {
+            'overall_health': round(overall_health, 1),
+            'metrics': health_metrics,
+            'status': 'healthy' if overall_health >= 80 else 'warning' if overall_health >= 60 else 'critical'
+        }
+        
+    except Exception as e:
+        return {
+            'overall_health': 0,
+            'metrics': {'error': {'status': 'critical', 'score': 0, 'details': f'System health calculation error: {str(e)}'}},
+            'status': 'critical'
+        }
 
 # File upload configuration
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -107,7 +291,7 @@ def save_uploaded_file(file, upload_dir, file_type):
 def index():
     """Dashboard page"""
     stats = get_dashboard_stats()
-    recent_work_orders = WorkOrder.query.order_by(WorkOrder.created_at.desc()).limit(5).all()
+    recent_work_orders = filter_by_company(WorkOrder.query).order_by(WorkOrder.created_at.desc()).limit(5).all()
     upcoming_maintenance = MaintenanceSchedule.query.filter(
         MaintenanceSchedule.next_due >= datetime.now(),
         MaintenanceSchedule.is_active == True
@@ -127,8 +311,8 @@ def health():
 @app.route('/equipment')
 @login_required
 def equipment_list():
-    """List all equipment"""
-    equipment = Equipment.query.all()
+    """List all equipment for the current company"""
+    equipment = filter_by_company(Equipment.query).all()
     return render_template('equipment/list.html', equipment=equipment)
 
 @app.route('/equipment/new', methods=['GET', 'POST'])
@@ -148,7 +332,8 @@ def equipment_new():
             department=data.get('department'),
             criticality=data.get('criticality', 'medium'),
             description=data.get('description'),
-            specifications=data.get('specifications')
+            specifications=data.get('specifications'),
+            company_id=current_user.company_id  # Ensure multi-tenancy
         )
         db.session.add(equipment)
         db.session.commit()
@@ -162,7 +347,7 @@ def equipment_new():
 def equipment_detail(id):
     """Equipment detail page"""
     equipment = Equipment.query.get_or_404(id)
-    work_orders = WorkOrder.query.filter_by(equipment_id=id).order_by(WorkOrder.created_at.desc()).all()
+    work_orders = filter_by_company(WorkOrder.query).filter_by(equipment_id=id).order_by(WorkOrder.created_at.desc()).all()
     maintenance_schedules = MaintenanceSchedule.query.filter_by(equipment_id=id).all()
     today = datetime.now()  # Use datetime instead of date for comparison
     return render_template('equipment/detail.html', 
@@ -179,7 +364,7 @@ def equipment_delete(id):
     
     try:
         # Check if equipment has associated work orders
-        work_orders = WorkOrder.query.filter_by(equipment_id=id).all()
+        work_orders = filter_by_company(WorkOrder.query).filter_by(equipment_id=id).all()
         
         # Check if equipment has maintenance schedules
         maintenance_schedules = MaintenanceSchedule.query.filter_by(equipment_id=id).all()
@@ -216,14 +401,11 @@ def work_orders_list():
     """List all work orders"""
     status_filter = request.args.get('status', '')
     priority_filter = request.args.get('priority', '')
-    
-    query = WorkOrder.query
-    
+    query = filter_by_company(WorkOrder.query)
     if status_filter:
         query = query.filter_by(status=status_filter)
     if priority_filter:
         query = query.filter_by(priority=priority_filter)
-    
     work_orders = query.order_by(WorkOrder.created_at.desc()).all()
     return render_template('work_orders/list.html', work_orders=work_orders)
 
@@ -293,6 +475,7 @@ def work_order_new():
 def work_order_detail(id):
     """Work order detail page"""
     work_order = WorkOrder.query.get_or_404(id)
+    enforce_company_access(work_order)
     return render_template('work_orders/detail.html', work_order=work_order)
 
 @app.route('/work-orders/<int:id>/update-status', methods=['POST'])
@@ -414,21 +597,18 @@ def add_checklist_notes(work_order_id, checklist_item_id):
 def inventory_list():
     """List all inventory items"""
     search_query = request.args.get('search', '').strip()
-    
+    query = filter_by_company(Inventory.query)
     if search_query:
-        # Search in part number, name, category, and location
-        inventory = Inventory.query.filter(
+        query = query.filter(
             db.or_(
                 Inventory.part_number.ilike(f'%{search_query}%'),
                 Inventory.name.ilike(f'%{search_query}%'),
                 Inventory.category.ilike(f'%{search_query}%'),
                 Inventory.location.ilike(f'%{search_query}%')
             )
-        ).all()
-    else:
-        inventory = Inventory.query.all()
-    
-    return render_template('inventory/list.html', inventory=inventory, search_query=search_query)
+        )
+    inventory = query.all()
+    return render_template('inventory/list.html', inventory=inventory)
 
 @app.route('/inventory/new', methods=['GET', 'POST'])
 @login_required
@@ -462,6 +642,7 @@ def inventory_new():
 def inventory_detail(id):
     """Inventory item detail page"""
     inventory = Inventory.query.get_or_404(id)
+    enforce_company_access(inventory)
     return render_template('inventory/detail.html', inventory=inventory)
 
 @app.route('/inventory/<int:id>/delete', methods=['POST'])
@@ -469,44 +650,44 @@ def inventory_detail(id):
 def inventory_delete(id):
     """Delete inventory item"""
     inventory = Inventory.query.get_or_404(id)
-    
-    try:
-        # Check if inventory item is used in any work orders
-        work_order_parts = WorkOrderPart.query.filter_by(inventory_id=id).all()
-        
-        if work_order_parts:
-            # Delete associated work order parts first
-            for part in work_order_parts:
-                db.session.delete(part)
-        
-        # Delete the inventory item
-        db.session.delete(inventory)
-        db.session.commit()
-        
-        flash(f'Inventory item "{inventory.name}" deleted successfully!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting inventory item: {str(e)}', 'error')
-    
+    enforce_company_access(inventory)
+    db.session.delete(inventory)
+    db.session.commit()
+    flash('Inventory item deleted!', 'success')
     return redirect(url_for('inventory_list'))
+
+@app.route('/inventory/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def inventory_edit(id):
+    inventory = Inventory.query.get_or_404(id)
+    enforce_company_access(inventory)
+    form = InventoryForm(obj=inventory)
+    # Company-scoped dropdowns
+    form.equipment_id.choices = [(0, '-- Select Equipment --')] + [(e.id, e.name) for e in filter_by_company(Equipment.query).order_by(Equipment.name).all()]
+    if form.validate_on_submit():
+        # ... update fields ...
+        db.session.commit()
+        flash('Inventory item updated!', 'success')
+        return redirect(url_for('inventory_detail', id=inventory.id))
+    return render_template('inventory/edit.html', form=form, inventory=inventory)
 
 # API routes
 @app.route('/api/equipment')
 def api_equipment():
-    """API endpoint for equipment"""
-    equipment = Equipment.query.all()
+    """API endpoint for equipment (company-scoped)"""
+    equipment = filter_by_company(Equipment.query).all()
     return jsonify([eq.to_dict() for eq in equipment])
 
 @app.route('/api/work-orders')
 def api_work_orders():
-    """API endpoint for work orders"""
-    work_orders = WorkOrder.query.all()
+    """API endpoint for work orders (company-scoped)"""
+    work_orders = filter_by_company(WorkOrder.query).all()
     return jsonify([wo.to_dict() for wo in work_orders])
 
 @app.route('/api/inventory')
 def api_inventory():
-    """API endpoint for inventory"""
-    inventory = Inventory.query.all()
+    """API endpoint for inventory (company-scoped)"""
+    inventory = filter_by_company(Inventory.query).all()
     return jsonify([inv.to_dict() for inv in inventory])
 
 @app.route('/api/dashboard-stats')
@@ -514,16 +695,26 @@ def api_dashboard_stats():
     """API endpoint for dashboard statistics"""
     return jsonify(get_dashboard_stats())
 
+@app.route('/api/system-health')
+@login_required
+def api_system_health():
+    """API endpoint for system health data"""
+    if current_user.role not in ['admin', 'manager']:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    health_data = calculate_system_health()
+    return jsonify(health_data)
+
 @app.route('/api/locations')
 def api_locations():
-    """API endpoint for locations"""
-    locations = Location.query.all()
+    """API endpoint for locations (company-scoped)"""
+    locations = filter_by_company(Location.query).all()
     return jsonify([loc.to_dict() for loc in locations])
 
 @app.route('/api/calendar-events')
 @login_required
 def api_calendar_events():
-    work_orders = WorkOrder.query.filter(WorkOrder.scheduled_date != None).all()
+    work_orders = filter_by_company(WorkOrder.query).filter(WorkOrder.scheduled_date != None).all()
     maints = MaintenanceSchedule.query.filter(MaintenanceSchedule.next_due != None, MaintenanceSchedule.is_active == True).all()
     events = []
     for wo in work_orders:
@@ -556,19 +747,22 @@ def api_upload_media(work_order_id):
         if media_type == 'image':
             files = request.files.getlist('images')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'work_orders'), 'image')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'work_orders')
+                file_path = save_uploaded_file(file, upload_dir, 'image')
                 if file_path:
                     media_files.append(file_path)
         elif media_type == 'video':
             files = request.files.getlist('videos')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'work_orders'), 'video')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'work_orders')
+                file_path = save_uploaded_file(file, upload_dir, 'video')
                 if file_path:
                     media_files.append(file_path)
         elif media_type == 'voice':
             files = request.files.getlist('voice_notes')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'work_orders'), 'audio')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'work_orders')
+                file_path = save_uploaded_file(file, upload_dir, 'audio')
                 if file_path:
                     media_files.append(file_path)
         
@@ -608,19 +802,22 @@ def api_upload_comment_media(work_order_id, comment_id):
         if media_type == 'image':
             files = request.files.getlist('images')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'comments'), 'image')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'comments')
+                file_path = save_uploaded_file(file, upload_dir, 'image')
                 if file_path:
                     media_files.append(file_path)
         elif media_type == 'video':
             files = request.files.getlist('videos')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'comments'), 'video')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'comments')
+                file_path = save_uploaded_file(file, upload_dir, 'video')
                 if file_path:
                     media_files.append(file_path)
         elif media_type == 'voice':
             files = request.files.getlist('voice_notes')
             for file in files:
-                file_path = save_uploaded_file(file, os.path.join(app.static_folder, 'uploads', 'comments'), 'audio')
+                upload_dir = os.path.join(app.static_folder or '', 'uploads', 'comments')
+                file_path = save_uploaded_file(file, upload_dir, 'audio')
                 if file_path:
                     media_files.append(file_path)
         
@@ -679,7 +876,7 @@ def api_sync_offline_data(work_order_id):
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
                     filename = f"{timestamp}_offline_{media_type}.{media_item.get('extension', 'jpg')}"
                     
-                    upload_dir = os.path.join(app.static_folder, 'uploads', 'work_orders')
+                    upload_dir = os.path.join(app.static_folder or '', 'uploads', 'work_orders')
                     os.makedirs(upload_dir, exist_ok=True)
                     file_path = os.path.join(upload_dir, filename)
                     
@@ -728,7 +925,13 @@ class SignupForm(FlaskForm):
     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=50)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField('Sign Up')
+    organization_type = SelectField('I want to:', choices=[
+        ('new_org', 'Start a new organization'),
+        ('existing_org', 'Join an existing organization')
+    ], validators=[DataRequired()])
+    company_id = SelectField('Select Organization', coerce=int, validators=[Optional()])
+    new_company = StringField('Organization Name', validators=[Optional()])
+    submit = SubmitField('Create Account')
 
 class ProfileEditForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
@@ -821,24 +1024,57 @@ app.register_blueprint(google_bp, url_prefix="/login")
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
+    companies = Company.query.all()
+    form.company_id.choices = [(0, '--- Select an organization ---')] + [(c.id, c.name) for c in companies]
+    
     if form.validate_on_submit():
+        # Handle organization selection based on type
+        if form.organization_type.data == 'new_org':
+            if not form.new_company.data:
+                flash('Please enter your organization name.', 'error')
+                return render_template('signup.html', form=form)
+            # Create new organization
+            company = Company(name=form.new_company.data)
+            db.session.add(company)
+            db.session.commit()
+            company_id = company.id
+        else:  # existing_org
+            if not form.company_id.data:
+                flash('Please select an organization to join.', 'error')
+                return render_template('signup.html', form=form)
+            company_id = form.company_id.data
+        
+        # Check for existing user
         if User.query.filter_by(email=form.email.data).first():
             flash('Email already registered.', 'error')
             return render_template('signup.html', form=form)
         if User.query.filter_by(username=form.username.data).first():
             flash('Username already taken.', 'error')
             return render_template('signup.html', form=form)
+        
+        # Create user
         user = User(
             username=form.username.data,
             email=form.email.data,
             first_name=form.first_name.data,
-            last_name=form.last_name.data
+            last_name=form.last_name.data,
+            company_id=company_id
         )
+        
+        # Set admin role for the first user of a new organization
+        if form.organization_type.data == 'new_org':
+            user.role = 'admin'
+        
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Account created! Please log in.', 'success')
+        
+        if form.organization_type.data == 'new_org':
+            flash(f'Account created successfully! Welcome to {form.new_company.data}. You are now the administrator. Please log in.', 'success')
+        else:
+            flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('login'))
+    
     return render_template('signup.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -981,20 +1217,18 @@ def delete_account():
 def locations_list():
     """List all locations"""
     search_query = request.args.get('search', '').strip()
-    
+    query = filter_by_company(Location.query)
     if search_query:
-        locations = Location.query.filter(
+        query = query.filter(
             db.or_(
                 Location.name.ilike(f'%{search_query}%'),
                 Location.city.ilike(f'%{search_query}%'),
                 Location.state.ilike(f'%{search_query}%'),
                 Location.contact_person.ilike(f'%{search_query}%')
             )
-        ).all()
-    else:
-        locations = Location.query.all()
-    
-    return render_template('locations/list.html', locations=locations, search_query=search_query)
+        )
+    locations = query.all()
+    return render_template('locations/list.html', locations=locations)
 
 @app.route('/locations/new', methods=['GET', 'POST'])
 @login_required
@@ -1029,15 +1263,15 @@ def location_new():
 def location_detail(id):
     """Location detail page"""
     location = Location.query.get_or_404(id)
-    equipment = Equipment.query.filter_by(location_id=id).all()
-    users = User.query.filter_by(location_id=id).all()
-    return render_template('locations/detail.html', location=location, equipment=equipment, users=users)
+    enforce_company_access(location)
+    return render_template('locations/detail.html', location=location)
 
 @app.route('/locations/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def location_edit(id):
     """Edit location"""
     location = Location.query.get_or_404(id)
+    enforce_company_access(location)
     form = LocationForm(obj=location)
     
     if form.validate_on_submit():
@@ -1065,30 +1299,17 @@ def location_edit(id):
 def location_delete(id):
     """Delete location"""
     location = Location.query.get_or_404(id)
-    
-    try:
-        # Check if location has associated equipment or users
-        equipment_count = Equipment.query.filter_by(location_id=id).count()
-        users_count = User.query.filter_by(location_id=id).count()
-        
-        if equipment_count > 0 or users_count > 0:
-            flash(f'Cannot delete location "{location.name}". It has {equipment_count} equipment and {users_count} users assigned to it.', 'error')
-            return redirect(url_for('location_detail', id=id))
-        
-        db.session.delete(location)
-        db.session.commit()
-        flash(f'Location "{location.name}" deleted successfully!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting location: {str(e)}', 'error')
-    
+    enforce_company_access(location)
+    db.session.delete(location)
+    db.session.commit()
+    flash('Location deleted!', 'success')
     return redirect(url_for('locations_list'))
 
 @app.route('/maps')
 @login_required
 def maps():
-    """Interactive maps page showing all locations"""
-    locations = Location.query.filter_by(is_active=True).all()
+    """Interactive maps page showing all locations (company-scoped)"""
+    locations = filter_by_company(Location.query).filter_by(is_active=True).all()
     locations_data = [loc.to_dict() for loc in locations]
     return render_template('maps.html', locations=locations_data)
 
@@ -1158,13 +1379,13 @@ def maintenance_schedule_delete(id, schedule_id):
 @app.route('/teams', methods=['GET', 'POST'])
 @login_required
 def teams():
-    users = User.query.order_by(User.first_name, User.last_name).all()
-    teams = Team.query.order_by(Team.name).all()
+    users = filter_by_company(User.query).order_by(User.first_name, User.last_name).all()
+    teams = filter_by_company(Team.query).order_by(Team.name).all()
     search_user = request.args.get('search_user', '').strip().lower()
     search_team = request.args.get('search_team', '').strip().lower()
     filtered_users = [u for u in users if search_user in (u.first_name + ' ' + u.last_name + ' ' + u.username).lower()] if search_user else users
     filtered_teams = [t for t in teams if search_team in t.name.lower()] if search_team else teams
-    return render_template('teams.html', users=filtered_users, teams=filtered_teams, all_users=users, all_teams=teams, search_user=search_user, search_team=search_team)
+    return render_template('teams.html', users=filtered_users, teams=filtered_teams)
 
 @app.route('/teams/create', methods=['GET', 'POST'])
 @login_required
@@ -1184,8 +1405,9 @@ def create_team():
 @login_required
 def edit_team(team_id):
     team = Team.query.get_or_404(team_id)
+    enforce_company_access(team)
     form = TeamForm(obj=team)
-    form.members.choices = [(u.id, f"{u.first_name} {u.last_name} ({u.username})") for u in User.query.order_by(User.first_name, User.last_name).all()]
+    form.members.choices = [(u.id, f"{u.first_name} {u.last_name} ({u.username})") for u in filter_by_company(User.query).order_by(User.first_name, User.last_name).all()]
     if request.method == 'GET':
         form.members.data = [u.id for u in team.members]
     if form.validate_on_submit():
@@ -1201,6 +1423,7 @@ def edit_team(team_id):
 @login_required
 def delete_team(team_id):
     team = Team.query.get_or_404(team_id)
+    enforce_company_access(team)
     db.session.delete(team)
     db.session.commit()
     flash('Team deleted!', 'success')
@@ -1237,9 +1460,7 @@ def sops_list():
     """List all SOPs"""
     search = request.args.get('search', '').strip()
     category_filter = request.args.get('category', '').strip()
-    
-    query = SOP.query
-    
+    query = filter_by_company(SOP.query)
     if search:
         query = query.filter(
             db.or_(
@@ -1247,15 +1468,12 @@ def sops_list():
                 SOP.description.ilike(f'%{search}%')
             )
         )
-    
     if category_filter:
         query = query.filter(SOP.category == category_filter)
-    
     sops = query.order_by(SOP.name).all()
-    categories = db.session.query(SOP.category).distinct().all()
+    categories = query.with_entities(SOP.category).distinct().all()
     categories = [cat[0] for cat in categories if cat[0]]
-    
-    return render_template('sops/list.html', sops=sops, search=search, categories=categories, category_filter=category_filter)
+    return render_template('sops/list.html', sops=sops, categories=categories)
 
 @app.route('/sops/new', methods=['GET', 'POST'])
 @login_required
@@ -1296,6 +1514,7 @@ def sop_detail(id):
 def sop_edit(id):
     """Edit SOP"""
     sop = SOP.query.get_or_404(id)
+    enforce_company_access(sop)
     form = SOPForm(obj=sop)
     form.equipment_id.choices = [(0, '-- Select Equipment --')] + [(e.id, e.name) for e in Equipment.query.order_by(Equipment.name).all()]
     
@@ -1321,6 +1540,7 @@ def sop_edit(id):
 def sop_delete(id):
     """Delete SOP"""
     sop = SOP.query.get_or_404(id)
+    enforce_company_access(sop)
     db.session.delete(sop)
     db.session.commit()
     flash('SOP deleted successfully!', 'success')
@@ -1483,7 +1703,7 @@ def mobile_login():
 def mobile_dashboard():
     """Mobile dashboard showing assigned tasks"""
     # Get work orders assigned to current user (technician or team member)
-    assigned_work_orders = WorkOrder.query.filter(
+    assigned_work_orders = filter_by_company(WorkOrder.query).filter(
         db.or_(
             WorkOrder.assigned_technician_id == current_user.id,
             WorkOrder.assigned_team_id.in_([team.id for team in current_user.teams])
@@ -1494,7 +1714,7 @@ def mobile_dashboard():
     
     # Get completed work orders from today
     today = datetime.now().date()
-    completed_today = WorkOrder.query.filter(
+    completed_today = filter_by_company(WorkOrder.query).filter(
         db.or_(
             WorkOrder.assigned_technician_id == current_user.id,
             WorkOrder.assigned_team_id.in_([team.id for team in current_user.teams])
@@ -1515,7 +1735,7 @@ def mobile_tasks():
     status_filter = request.args.get('status', 'all')
     priority_filter = request.args.get('priority', 'all')
     
-    query = WorkOrder.query.filter(
+    query = filter_by_company(WorkOrder.query).filter(
         db.or_(
             WorkOrder.assigned_technician_id == current_user.id,
             WorkOrder.assigned_team_id.in_([team.id for team in current_user.teams])
@@ -1656,7 +1876,7 @@ def mobile_logout():
 @login_required
 def api_mobile_tasks():
     """API endpoint for mobile task list"""
-    work_orders = WorkOrder.query.filter(
+    work_orders = filter_by_company(WorkOrder.query).filter(
         db.or_(
             WorkOrder.assigned_technician_id == current_user.id,
             WorkOrder.assigned_team_id.in_([team.id for team in current_user.teams])
@@ -1719,9 +1939,9 @@ def api_mobile_task_detail(work_order_id):
 def reports_dashboard():
     """Main reports dashboard"""
     # Get basic metrics
-    total_work_orders = WorkOrder.query.count()
-    completed_work_orders = WorkOrder.query.filter_by(status='completed').count()
-    on_time_work_orders = WorkOrder.query.filter(
+    total_work_orders = filter_by_company(WorkOrder.query).count()
+    completed_work_orders = filter_by_company(WorkOrder.query).filter_by(status='completed').count()
+    on_time_work_orders = filter_by_company(WorkOrder.query).filter(
         WorkOrder.status == 'completed',
         WorkOrder.actual_end_time <= WorkOrder.due_date
     ).count()
@@ -1731,7 +1951,7 @@ def reports_dashboard():
     on_time_rate = (on_time_work_orders / completed_work_orders * 100) if completed_work_orders > 0 else 0
     
     # Get recent activity
-    recent_work_orders = WorkOrder.query.order_by(WorkOrder.created_at.desc()).limit(10).all()
+    recent_work_orders = filter_by_company(WorkOrder.query).order_by(WorkOrder.created_at.desc()).limit(10).all()
     
     # Get equipment performance
     equipment_stats = db.session.query(
@@ -1761,7 +1981,7 @@ def task_logs():
     assigned_to = request.args.get('assigned_to', 'all')
     
     # Build query
-    query = WorkOrder.query
+    query = filter_by_company(WorkOrder.query)
     
     if start_date:
         query = query.filter(WorkOrder.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
@@ -1805,7 +2025,7 @@ def performance_metrics():
     start_date = end_date - timedelta(days=int(period))
     
     # Get work orders in period
-    work_orders = WorkOrder.query.filter(
+    work_orders = filter_by_company(WorkOrder.query).filter(
         WorkOrder.created_at >= start_date,
         WorkOrder.created_at <= end_date
     ).all()
@@ -1879,7 +2099,7 @@ def export_csv():
     assigned_to = request.args.get('assigned_to', 'all')
     
     # Build query
-    query = WorkOrder.query
+    query = filter_by_company(WorkOrder.query)
     
     if start_date:
         query = query.filter(WorkOrder.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
@@ -2166,8 +2386,19 @@ def admin_dashboard():
     medium_work_orders = WorkOrder.query.filter_by(priority='medium').count()
     low_work_orders = WorkOrder.query.filter_by(priority='low').count()
 
-    # Placeholder for system health (in percent)
-    system_health = 98.5
+    # Calculate real system health
+    system_health_data = calculate_system_health()
+    system_health = system_health_data['overall_health']
+    
+    # Get user counts by role
+    admin_count = User.query.filter_by(role='admin').count()
+    manager_count = User.query.filter_by(role='manager').count()
+    technician_count = User.query.filter_by(role='technician').count()
+    viewer_count = User.query.filter_by(role='viewer').count()
+    
+    # Get total users for the company
+    total_users = filter_by_company(User.query).count()
+    active_work_orders = open_work_orders + in_progress_work_orders
 
     return render_template('admin/dashboard.html',
                          total_equipment=total_equipment,
@@ -2185,26 +2416,26 @@ def admin_dashboard():
                          high_work_orders=high_work_orders,
                          medium_work_orders=medium_work_orders,
                          low_work_orders=low_work_orders,
-                         system_health=system_health)
+                         system_health=system_health,
+                         system_health_data=system_health_data,
+                         admin_count=admin_count,
+                         manager_count=manager_count,
+                         technician_count=technician_count,
+                         viewer_count=viewer_count,
+                         total_users=total_users,
+                         active_work_orders=active_work_orders)
 
 @app.route('/admin/assets')
 @login_required
 def admin_assets():
-    """Admin asset management with advanced filtering"""
-    # Check if user has admin privileges
     if current_user.role not in ['admin', 'manager']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
-    
-    # Get filter parameters
     status_filter = request.args.get('status', 'all')
     location_filter = request.args.get('location', 'all')
     type_filter = request.args.get('type', 'all')
     search_query = request.args.get('search', '')
-    
-    # Build query
-    query = Equipment.query
-    
+    query = filter_by_company(Equipment.query)
     if status_filter != 'all':
         query = query.filter(Equipment.status == status_filter)
     if location_filter != 'all':
@@ -2220,13 +2451,9 @@ def admin_assets():
                 Equipment.location.contains(search_query)
             )
         )
-    
     equipment_list = query.order_by(Equipment.name).all()
-    
-    # Get filter options
-    locations = db.session.query(Equipment.location).distinct().all()
-    equipment_types = db.session.query(Equipment.type).distinct().all()
-    
+    locations = query.with_entities(Equipment.location).distinct().all()
+    equipment_types = query.with_entities(Equipment.type).distinct().all()
     return render_template('admin/assets.html',
                          equipment_list=equipment_list,
                          locations=[loc[0] for loc in locations if loc[0]],
@@ -2241,13 +2468,9 @@ def admin_assets():
 @app.route('/admin/work-orders')
 @login_required
 def admin_work_orders():
-    """Admin work order management with advanced filtering"""
-    # Check if user has admin privileges
     if current_user.role not in ['admin', 'manager']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
-    
-    # Get filter parameters
     status_filter = request.args.get('status', 'all')
     priority_filter = request.args.get('priority', 'all')
     equipment_filter = request.args.get('equipment_id', 'all')
@@ -2256,10 +2479,7 @@ def admin_work_orders():
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
     search_query = request.args.get('search', '')
-    
-    # Build query
-    query = WorkOrder.query
-    
+    query = filter_by_company(WorkOrder.query)
     if status_filter != 'all':
         query = query.filter(WorkOrder.status == status_filter)
     if priority_filter != 'all':
@@ -2282,13 +2502,9 @@ def admin_work_orders():
                 WorkOrder.work_order_number.contains(search_query)
             )
         )
-    
     work_orders = query.order_by(WorkOrder.created_at.desc()).all()
-    
-    # Get filter options
-    equipment_list = Equipment.query.all()
-    technicians = User.query.filter_by(role='technician').all()
-    
+    equipment_list = filter_by_company(Equipment.query).all()
+    technicians = filter_by_company(User.query.filter_by(role='technician')).all()
     from datetime import datetime
     now = datetime.now()
     return render_template('admin/work_orders.html',
@@ -2491,7 +2707,7 @@ def admin_analytics():
     start_date = end_date - timedelta(days=int(period))
     
     # Get work orders in period
-    work_orders = WorkOrder.query.filter(
+    work_orders = filter_by_company(WorkOrder.query).filter(
         WorkOrder.created_at >= start_date,
         WorkOrder.created_at <= end_date
     ).all()
@@ -2554,21 +2770,14 @@ def admin_analytics():
 @app.route('/admin/users')
 @login_required
 def admin_users():
-    """Admin user management"""
-    # Check if user has admin privileges
     if current_user.role not in ['admin', 'manager']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
-    
-    # Get filter parameters
     role_filter = request.args.get('role', '')
     status_filter = request.args.get('status', '')
     department_filter = request.args.get('department', '')
     search_query = request.args.get('search', '')
-    
-    # Build query
-    query = User.query
-    
+    query = filter_by_company(User.query)
     if role_filter:
         query = query.filter(User.role == role_filter)
     if status_filter == 'active':
@@ -2586,10 +2795,13 @@ def admin_users():
                 User.username.contains(search_query)
             )
         )
-    
     users = query.order_by(User.created_at.desc()).all()
-    
-    return render_template('admin/users.html', users=users)
+    return render_template('admin/users.html', users=users, filters={
+        'role': role_filter,
+        'status': status_filter,
+        'department': department_filter,
+        'search': search_query
+    })
 
 @app.route('/admin/users/create', methods=['POST'])
 @login_required
@@ -2639,6 +2851,7 @@ def admin_get_user(user_id):
         return jsonify({'error': 'Access denied'}), 403
     
     user = User.query.get_or_404(user_id)
+    enforce_company_access(user)
     return jsonify({
         'id': user.id,
         'username': user.username,
@@ -2661,6 +2874,7 @@ def admin_update_user(user_id):
         return redirect(url_for('admin_users'))
     
     user = User.query.get_or_404(user_id)
+    enforce_company_access(user)
     data = request.form
     
     # Update user fields
@@ -2686,6 +2900,7 @@ def admin_toggle_user_status(user_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
     user = User.query.get_or_404(user_id)
+    enforce_company_access(user)
     
     # Prevent deactivating own account
     if user.id == current_user.id:
@@ -2705,6 +2920,7 @@ def admin_reset_user_password(user_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
     user = User.query.get_or_404(user_id)
+    enforce_company_access(user)
     
     # Generate temporary password
     import secrets
@@ -2716,6 +2932,38 @@ def admin_reset_user_password(user_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': f'Password reset successfully. Temporary password: {temp_password}'})
+
+@app.route('/admin/users/<int:user_id>/change-role', methods=['POST'])
+@login_required
+def admin_change_user_role(user_id):
+    """Change user role"""
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Access denied'})
+    
+    user = User.query.get_or_404(user_id)
+    if user.company_id != current_user.company_id:
+        return jsonify({'success': False, 'message': 'Access denied'})
+    
+    # Prevent admin from changing their own role
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'You cannot change your own role'})
+    
+    data = request.get_json()
+    new_role = data.get('role')
+    
+    if new_role not in ['admin', 'manager', 'technician', 'viewer']:
+        return jsonify({'success': False, 'message': 'Invalid role'})
+    
+    # Prevent removing the last admin
+    if user.role == 'admin' and new_role != 'admin':
+        admin_count = User.query.filter_by(company_id=current_user.company_id, role='admin').count()
+        if admin_count <= 1:
+            return jsonify({'success': False, 'message': 'Cannot remove the last administrator'})
+    
+    user.role = new_role
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': f'User role updated to {new_role}'})
 
 @app.route('/admin/roles')
 @login_required
@@ -3381,6 +3629,324 @@ def test_qr():
     """Test QR code generation"""
     test_url = request.host_url.rstrip('/') + '/qr-report/1'
     return render_template('test_qr.html', qr_url=test_url)
+
+# WhatsApp Integration Routes
+@app.route('/whatsapp/webhook', methods=['GET', 'POST'])
+def whatsapp_webhook():
+    """WhatsApp webhook endpoint for receiving messages"""
+    if request.method == 'GET':
+        # Webhook verification
+        mode = request.args.get('hub.mode')
+        token = request.args.get('hub.verify_token')
+        challenge = request.args.get('hub.challenge')
+        
+        if mode == 'subscribe' and token == os.getenv('WHATSAPP_VERIFY_TOKEN'):
+            return challenge
+        else:
+            return 'Forbidden', 403
+    
+    elif request.method == 'POST':
+        # Process incoming messages
+        data = request.get_json()
+        try:
+            from whatsapp_webhook import WhatsAppWebhookHandler
+            result = WhatsAppWebhookHandler.process_incoming_message(data)
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/whatsapp/verify', methods=['GET', 'POST'])
+@login_required
+def whatsapp_verify():
+    """WhatsApp number verification page"""
+    if request.method == 'POST':
+        phone_number = request.form.get('phone_number')
+        verification_code = request.form.get('verification_code')
+        
+        if not phone_number:
+            flash('Please enter your WhatsApp number.', 'error')
+            return render_template('whatsapp_verify.html')
+        
+        # Format phone number (remove spaces, add country code if needed)
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        if not phone_number.startswith('+'):
+            phone_number = '+1' + phone_number  # Default to US
+        
+        # Check if verification code is provided
+        if verification_code:
+            # Verify the code
+            whatsapp_user = WhatsAppUser.query.filter_by(
+                whatsapp_number=phone_number,
+                verification_code=verification_code
+            ).first()
+            
+            if whatsapp_user and whatsapp_user.verification_expires > datetime.now():
+                whatsapp_user.is_verified = True
+                whatsapp_user.verification_code = None
+                whatsapp_user.verification_expires = None
+                db.session.commit()
+                flash('WhatsApp number verified successfully!', 'success')
+                return redirect(url_for('profile'))
+            else:
+                flash('Invalid or expired verification code.', 'error')
+        else:
+            # Send verification code
+            import random
+            code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            
+            # Check if user already has a WhatsApp profile
+            existing_user = WhatsAppUser.query.filter_by(user_id=current_user.id).first()
+            if existing_user:
+                existing_user.whatsapp_number = phone_number
+                existing_user.verification_code = code
+                existing_user.verification_expires = datetime.now() + timedelta(minutes=10)
+                existing_user.is_verified = False
+            else:
+                whatsapp_user = WhatsAppUser(
+                    user_id=current_user.id,
+                    whatsapp_number=phone_number,
+                    verification_code=code,
+                    verification_expires=datetime.now() + timedelta(minutes=10),
+                    is_verified=False
+                )
+                db.session.add(whatsapp_user)
+            
+            db.session.commit()
+            
+            # Send verification code via WhatsApp
+            try:
+                from whatsapp_integration import whatsapp
+                message = f"Your CMMS verification code is: {code}\n\nThis code will expire in 10 minutes."
+                result = whatsapp.send_message(phone_number, message)
+                
+                if result['success']:
+                    flash('Verification code sent to your WhatsApp number.', 'success')
+                else:
+                    flash(f'Error sending verification code: {result.get("error")}', 'error')
+            except Exception as e:
+                flash(f'Error sending verification code: {str(e)}', 'error')
+        
+        return render_template('whatsapp_verify.html', phone_number=phone_number)
+    
+    return render_template('whatsapp_verify.html')
+
+@app.route('/whatsapp/settings', methods=['GET', 'POST'])
+@login_required
+def whatsapp_settings():
+    """WhatsApp notification settings"""
+    whatsapp_user = WhatsAppUser.query.filter_by(user_id=current_user.id).first()
+    
+    if request.method == 'POST':
+        if not whatsapp_user:
+            flash('Please verify your WhatsApp number first.', 'error')
+            return redirect(url_for('whatsapp_verify'))
+        
+        # Update notification preferences
+        preferences = {
+            'work_order_assignments': request.form.get('work_order_assignments') == 'on',
+            'priority_escalations': request.form.get('priority_escalations') == 'on',
+            'parts_delivery': request.form.get('parts_delivery') == 'on',
+            'maintenance_reminders': request.form.get('maintenance_reminders') == 'on',
+            'emergency_broadcasts': request.form.get('emergency_broadcasts') == 'on',
+            'daily_checklists': request.form.get('daily_checklists') == 'on'
+        }
+        
+        whatsapp_user.notification_preferences = json.dumps(preferences)
+        whatsapp_user.preferred_language = request.form.get('preferred_language', 'en')
+        db.session.commit()
+        
+        flash('WhatsApp settings updated successfully!', 'success')
+        return redirect(url_for('whatsapp_settings'))
+    
+    preferences = {}
+    if whatsapp_user and whatsapp_user.notification_preferences:
+        preferences = json.loads(whatsapp_user.notification_preferences)
+    
+    return render_template('whatsapp_settings.html', 
+                         whatsapp_user=whatsapp_user, 
+                         preferences=preferences)
+
+@app.route('/whatsapp/templates')
+@login_required
+def whatsapp_templates():
+    """Manage WhatsApp message templates (company-scoped)"""
+    templates = filter_by_company(WhatsAppTemplate.query).all()
+    return render_template('whatsapp_templates.html', templates=templates)
+
+@app.route('/whatsapp/templates/new', methods=['GET', 'POST'])
+@login_required
+def whatsapp_template_new():
+    """Create new WhatsApp template (company-scoped)"""
+    if request.method == 'POST':
+        data = request.form
+        template = WhatsAppTemplate(
+            name=data['name'],
+            category=data['category'],
+            template_id=data['template_id'],
+            language=data['language'],
+            content=data['content'],
+            variables=data.get('variables'),
+            is_active=data.get('is_active') == 'on',
+            company_id=current_user.company_id
+        )
+        db.session.add(template)
+        db.session.commit()
+        flash('WhatsApp template created successfully!', 'success')
+        return redirect(url_for('whatsapp_templates'))
+    
+    return render_template('whatsapp_template_new.html')
+
+@app.route('/whatsapp/emergency', methods=['GET', 'POST'])
+@login_required
+def whatsapp_emergency():
+    """Send emergency broadcast (company-scoped)"""
+    if request.method == 'POST':
+        data = request.form
+        emergency = EmergencyBroadcast(
+            title=data['title'],
+            message=data['message'],
+            priority=data['priority'],
+            equipment_id=data.get('equipment_id'),
+            location_id=data.get('location_id'),
+            sent_by_id=current_user.id,
+            recipients=data.get('recipients', 'all'),
+            expires_at=datetime.now() + timedelta(hours=24) if data.get('expires') else None,
+            company_id=current_user.company_id
+        )
+        db.session.add(emergency)
+        db.session.commit()
+        
+        # Send emergency broadcast
+        try:
+            from whatsapp_notifications import WhatsAppNotifications
+            success = WhatsAppNotifications.send_emergency_broadcast(emergency)
+            
+            if success:
+                flash('Emergency broadcast sent successfully!', 'success')
+            else:
+                flash('Error sending emergency broadcast.', 'error')
+        except Exception as e:
+            flash(f'Error sending emergency broadcast: {str(e)}', 'error')
+        
+        return redirect(url_for('whatsapp_emergency'))
+    
+    equipment_list = filter_by_company(Equipment.query).all()
+    locations = filter_by_company(Location.query).all()
+    return render_template('whatsapp_emergency.html', 
+                         equipment_list=equipment_list, 
+                         locations=locations)
+
+@app.route('/whatsapp/notifications')
+@login_required
+def whatsapp_notifications():
+    """View WhatsApp notification logs (company-scoped)"""
+    page = request.args.get('page', 1, type=int)
+    notifications = filter_by_company(NotificationLog.query).filter_by(
+        notification_type='whatsapp'
+    ).order_by(NotificationLog.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template('whatsapp_notifications.html', notifications=notifications)
+
+@app.route('/api/whatsapp/send-test', methods=['POST'])
+@login_required
+def api_whatsapp_send_test():
+    """Send test WhatsApp message"""
+    whatsapp_user = WhatsAppUser.query.filter_by(user_id=current_user.id).first()
+    if not whatsapp_user or not whatsapp_user.is_verified:
+        return jsonify({'success': False, 'error': 'WhatsApp not verified'})
+    
+    try:
+        from whatsapp_integration import whatsapp
+        message = "🧪 Test message from CMMS\n\nThis is a test message to verify your WhatsApp integration is working correctly."
+        result = whatsapp.send_message(whatsapp_user.whatsapp_number, message)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/whatsapp/users')
+@login_required
+def api_whatsapp_users():
+    """Get all WhatsApp users for admin (company-scoped)"""
+    users = filter_by_company(WhatsAppUser.query).all()
+    return jsonify([user.to_dict() for user in users])
+
+@app.route('/whatsapp/disconnect', methods=['POST'])
+@login_required
+def whatsapp_disconnect():
+    """Disconnect WhatsApp integration for current user"""
+    whatsapp_user = WhatsAppUser.query.filter_by(user_id=current_user.id).first()
+    
+    if whatsapp_user:
+        # Delete all associated messages
+        WhatsAppMessage.query.filter_by(whatsapp_user_id=whatsapp_user.id).delete()
+        
+        # Delete the WhatsApp user profile
+        db.session.delete(whatsapp_user)
+        db.session.commit()
+        
+        flash('WhatsApp integration disconnected successfully.', 'success')
+    else:
+        flash('No WhatsApp integration found to disconnect.', 'info')
+    
+    return redirect(url_for('profile'))
+
+@app.route('/whatsapp/templates/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def whatsapp_template_edit(id):
+    """Edit WhatsApp template"""
+    template = WhatsAppTemplate.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        data = request.form
+        template.name = data['name']
+        template.category = data['category']
+        template.template_id = data['template_id']
+        template.language = data['language']
+        template.content = data['content']
+        template.variables = data.get('variables')
+        template.is_active = data.get('is_active') == 'on'
+        db.session.commit()
+        flash('WhatsApp template updated successfully!', 'success')
+        return redirect(url_for('whatsapp_templates'))
+    
+    return render_template('whatsapp_template_edit.html', template=template)
+
+@app.route('/whatsapp/templates/<int:id>/delete', methods=['POST'])
+@login_required
+def whatsapp_template_delete(id):
+    """Delete WhatsApp template"""
+    template = WhatsAppTemplate.query.get_or_404(id)
+    try:
+        db.session.delete(template)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/whatsapp/retry-notification/<int:notification_id>', methods=['POST'])
+@login_required
+def api_retry_notification(notification_id):
+    """Retry failed WhatsApp notification"""
+    notification = NotificationLog.query.get_or_404(notification_id)
+    
+    if notification.status != 'failed':
+        return jsonify({'success': False, 'error': 'Notification is not in failed status'})
+    
+    try:
+        # Retry sending the notification
+        from whatsapp_notifications import WhatsAppNotifications
+        success = WhatsAppNotifications.send_notification(notification)
+        
+        if success:
+            notification.status = 'sent'
+            notification.sent_at = datetime.now()
+            db.session.commit()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to send notification'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     print(os.getenv('DATABASE_URL'))

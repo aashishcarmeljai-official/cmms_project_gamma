@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% block title %}Edit WhatsApp Template - CMMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('whatsapp_templates') }}">WhatsApp Templates</a></li>
+                    <li class="breadcrumb-item active">Edit Template</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0">
+                <i class="fab fa-whatsapp text-success me-2"></i>
+                Edit WhatsApp Template
+            </h1>
+            <p class="text-muted">Modify the WhatsApp message template</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Template Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Template Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required
+                                           value="{{ template.name }}" placeholder="e.g., Work Order Assignment">
+                                    <div class="form-text">A descriptive name for the template</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="work_order" {{ 'selected' if template.category == 'work_order' }}>Work Order</option>
+                                        <option value="maintenance" {{ 'selected' if template.category == 'maintenance' }}>Maintenance</option>
+                                        <option value="emergency" {{ 'selected' if template.category == 'emergency' }}>Emergency</option>
+                                        <option value="general" {{ 'selected' if template.category == 'general' }}>General</option>
+                                    </select>
+                                    <div class="form-text">The type of notification this template is for</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="template_id" class="form-label">Template ID *</label>
+                                    <input type="text" class="form-control" id="template_id" name="template_id" required
+                                           value="{{ template.template_id }}" placeholder="e.g., work_order_assignment">
+                                    <div class="form-text">Unique identifier for the template (no spaces, use underscores)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="language" class="form-label">Language *</label>
+                                    <select class="form-select" id="language" name="language" required>
+                                        <option value="en" {{ 'selected' if template.language == 'en' }}>English (en)</option>
+                                        <option value="es" {{ 'selected' if template.language == 'es' }}>Spanish (es)</option>
+                                        <option value="fr" {{ 'selected' if template.language == 'fr' }}>French (fr)</option>
+                                        <option value="de" {{ 'selected' if template.language == 'de' }}>German (de)</option>
+                                        <option value="it" {{ 'selected' if template.language == 'it' }}>Italian (it)</option>
+                                        <option value="pt" {{ 'selected' if template.language == 'pt' }}>Portuguese (pt)</option>
+                                        <option value="hi" {{ 'selected' if template.language == 'hi' }}>Hindi (hi)</option>
+                                        <option value="ar" {{ 'selected' if template.language == 'ar' }}>Arabic (ar)</option>
+                                        <option value="zh" {{ 'selected' if template.language == 'zh' }}>Chinese (zh)</option>
+                                        <option value="ja" {{ 'selected' if template.language == 'ja' }}>Japanese (ja)</option>
+                                    </select>
+                                    <div class="form-text">Language of the template</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Template Content *</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" required
+                                      placeholder="Enter your message template here. Use {{variable_name}} for dynamic content.">{{ template.content }}</textarea>
+                            <div class="form-text">
+                                Use {{variable_name}} syntax for dynamic content. Example: "Hello {{name}}, your work order {{work_order_number}} has been assigned."
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="variables" class="form-label">Variables (JSON)</label>
+                            <textarea class="form-control" id="variables" name="variables" rows="4"
+                                      placeholder='{"name": "string", "work_order_number": "string", "priority": "string"}'>{{ template.variables or '' }}</textarea>
+                            <div class="form-text">
+                                Define the variables used in the template as JSON. This helps with validation and documentation.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {{ 'checked' if template.is_active }}>
+                                <label class="form-check-label" for="is_active">
+                                    Active Template
+                                </label>
+                                <div class="form-text">Enable this template for use in notifications</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>Update Template
+                            </button>
+                            <a href="{{ url_for('whatsapp_templates') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Template Preview -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Template Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Current Template</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <small class="text-muted">Template ID:</small>
+                                <p class="mb-1"><code>{{ template.template_id }}</code></p>
+                                <small class="text-muted">Category:</small>
+                                <p class="mb-1">{{ template.category.title() }}</p>
+                                <small class="text-muted">Language:</small>
+                                <p class="mb-1">{{ template.language.upper() }}</p>
+                                <small class="text-muted">Status:</small>
+                                <p class="mb-0">
+                                    {% if template.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Content Preview</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <pre class="mb-0">{{ template.content }}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if template.variables %}
+                    <div class="mb-3">
+                        <h6>Variables</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <pre class="mb-0">{{ template.variables }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <h6>Template Statistics</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <small class="text-muted">Created:</small>
+                                <p class="mb-1">{{ template.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                <small class="text-muted">Last Updated:</small>
+                                <p class="mb-0">{{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Variable Reference -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code me-2"></i>Common Variables
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>User Variables:</strong>
+                        <ul class="list-unstyled ms-2">
+                            <li><code>{{name}}</code> - User's full name</li>
+                            <li><code>{{username}}</code> - Username</li>
+                            <li><code>{{email}}</code> - Email address</li>
+                        </ul>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Work Order Variables:</strong>
+                        <ul class="list-unstyled ms-2">
+                            <li><code>{{work_order_number}}</code> - Work order ID</li>
+                            <li><code>{{work_order_title}}</code> - Work order title</li>
+                            <li><code>{{priority}}</code> - Priority level</li>
+                            <li><code>{{status}}</code> - Current status</li>
+                            <li><code>{{due_date}}</code> - Due date</li>
+                        </ul>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Equipment Variables:</strong>
+                        <ul class="list-unstyled ms-2">
+                            <li><code>{{equipment_name}}</code> - Equipment name</li>
+                            <li><code>{{equipment_id}}</code> - Equipment ID</li>
+                            <li><code>{{location}}</code> - Equipment location</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Preview template content changes
+document.getElementById('content').addEventListener('input', function() {
+    // You could add a live preview here if needed
+});
+
+// Auto-generate template ID from name (only if template_id is empty)
+document.getElementById('name').addEventListener('input', function() {
+    const templateIdField = document.getElementById('template_id');
+    if (!templateIdField.value) {
+        const name = this.value;
+        const templateId = name.toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, '_');
+        templateIdField.value = templateId;
+    }
+});
+</script>
+{% endblock %} 

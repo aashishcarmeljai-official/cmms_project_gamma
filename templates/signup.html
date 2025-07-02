@@ -1,38 +1,91 @@
 {% extends 'base.html' %}
 {% block title %}Sign Up{% endblock %}
 {% block content %}
-<div class="container mt-5" style="max-width: 400px;">
+<div class="container mt-5" style="max-width: 500px;">
     <div class="card shadow">
         <div class="card-body">
-            <h3 class="card-title text-center mb-4">Sign Up</h3>
+            <h3 class="card-title text-center mb-4">Create Your Account</h3>
             <form method="POST" action="">
                 {{ form.hidden_tag() }}
+                
+                <!-- Personal Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.first_name.label(class="form-label") }}
+                            {{ form.first_name(class="form-control", placeholder="First name") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.last_name.label(class="form-label") }}
+                            {{ form.last_name(class="form-control", placeholder="Last name") }}
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="mb-3">
                     {{ form.username.label(class="form-label") }}
                     {{ form.username(class="form-control", placeholder="Choose a username") }}
                 </div>
+                
                 <div class="mb-3">
                     {{ form.email.label(class="form-label") }}
                     {{ form.email(class="form-control", placeholder="Enter your email") }}
                 </div>
-                <div class="mb-3">
-                    {{ form.first_name.label(class="form-label") }}
-                    {{ form.first_name(class="form-control", placeholder="First name") }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control", placeholder="Create a password") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ form.confirm_password(class="form-control", placeholder="Confirm password") }}
+                        </div>
+                    </div>
                 </div>
+                
+                <!-- Organization Section -->
+                <hr class="my-4">
+                <h5 class="mb-3">Organization Setup</h5>
+                
                 <div class="mb-3">
-                    {{ form.last_name.label(class="form-label") }}
-                    {{ form.last_name(class="form-control", placeholder="Last name") }}
+                    {{ form.organization_type.label(class="form-label fw-bold") }}
+                    {{ form.organization_type(class="form-select", id="orgType") }}
                 </div>
-                <div class="mb-3">
-                    {{ form.password.label(class="form-label") }}
-                    {{ form.password(class="form-control", placeholder="Create a password") }}
+                
+                <!-- New Organization Option -->
+                <div id="newOrgSection" class="mb-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-building me-2"></i>
+                        <strong>Start Your Organization</strong><br>
+                        <small>Create a new organization and become the administrator. You'll have full control to invite team members, manage equipment, and oversee all maintenance operations.</small>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.new_company.label(class="form-label") }}
+                        {{ form.new_company(class="form-control", placeholder="Enter your organization name") }}
+                    </div>
                 </div>
-                <div class="mb-3">
-                    {{ form.confirm_password.label(class="form-label") }}
-                    {{ form.confirm_password(class="form-control", placeholder="Confirm password") }}
+                
+                <!-- Existing Organization Option -->
+                <div id="existingOrgSection" class="mb-3" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="fas fa-users me-2"></i>
+                        <strong>Join an Organization</strong><br>
+                        <small>Join an existing organization that you've been invited to. You'll have access to their maintenance management system.</small>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.company_id.label(class="form-label") }}
+                        {{ form.company_id(class="form-select") }}
+                    </div>
                 </div>
+                
                 <div class="d-grid mb-3">
-                    {{ form.submit(class="btn btn-success") }}
+                    {{ form.submit(class="btn btn-success btn-lg") }}
                 </div>
             </form>
             <div class="text-center">
@@ -42,4 +95,32 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const orgTypeSelect = document.getElementById('orgType');
+    const newOrgSection = document.getElementById('newOrgSection');
+    const existingOrgSection = document.getElementById('existingOrgSection');
+    
+    function toggleOrgSections() {
+        const selectedValue = orgTypeSelect.value;
+        
+        if (selectedValue === 'new_org') {
+            newOrgSection.style.display = 'block';
+            existingOrgSection.style.display = 'none';
+        } else if (selectedValue === 'existing_org') {
+            newOrgSection.style.display = 'none';
+            existingOrgSection.style.display = 'block';
+        } else {
+            newOrgSection.style.display = 'none';
+            existingOrgSection.style.display = 'none';
+        }
+    }
+    
+    orgTypeSelect.addEventListener('change', toggleOrgSections);
+    
+    // Initialize on page load
+    toggleOrgSections();
+});
+</script>
 {% endblock %} 

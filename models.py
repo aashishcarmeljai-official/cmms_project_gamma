@@ -5,10 +5,27 @@ from flask_login import UserMixin
 # We'll import db from a separate file to avoid circular imports
 from extensions import db
 
+# --- Multi-Tenancy: Company Model ---
+class Company(db.Model):
+    __tablename__ = 'companies'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relationships
+    users = db.relationship('User', backref='company', lazy=True)
+    equipment = db.relationship('Equipment', backref='company', lazy=True)
+    work_orders = db.relationship('WorkOrder', backref='company', lazy=True)
+    locations = db.relationship('Location', backref='company', lazy=True)
+    teams = db.relationship('Team', backref='company', lazy=True)
+    # inventory_items relationship removed to avoid backref conflict
+    # Add more as needed
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -65,6 +82,7 @@ class Equipment(db.Model):
     __tablename__ = 'equipment'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     equipment_id = db.Column(db.String(50), unique=True, nullable=False)  # Asset tag/ID
     category = db.Column(db.String(100), nullable=False)
@@ -122,6 +140,7 @@ class WorkOrder(db.Model):
     __tablename__ = 'work_orders'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     work_order_number = db.Column(db.String(50), unique=True, nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -187,6 +206,7 @@ class MaintenanceSchedule(db.Model):
     __tablename__ = 'maintenance_schedules'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=False)
     schedule_type = db.Column(db.String(20), default='calendar')  # calendar, runtime, condition
     frequency = db.Column(db.String(20), nullable=False)  # daily, weekly, monthly, yearly
@@ -233,6 +253,7 @@ class SOP(db.Model):
     __tablename__ = 'sops'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     category = db.Column(db.String(100))  # PM, Safety, Operation, etc.
@@ -337,6 +358,7 @@ class Inventory(db.Model):
     __tablename__ = 'inventory'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     part_number = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -352,6 +374,9 @@ class Inventory(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    company = db.relationship('Company', backref=db.backref('inventory_items', lazy='dynamic'))
     
     def __repr__(self):
         return f'<Inventory {self.name}>'
@@ -440,6 +465,7 @@ class Location(db.Model):
     __tablename__ = 'locations'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False, unique=True)
     address = db.Column(db.Text)
     city = db.Column(db.String(100))
@@ -494,6 +520,7 @@ user_teams = db.Table('user_teams',
 class Team(db.Model):
     __tablename__ = 'teams'
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -519,6 +546,7 @@ class WhatsAppUser(db.Model):
     __tablename__ = 'whatsapp_users'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     whatsapp_number = db.Column(db.String(20), unique=True, nullable=False)
     is_verified = db.Column(db.Boolean, default=False)
@@ -531,6 +559,7 @@ class WhatsAppUser(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    company = db.relationship('Company', backref='whatsapp_users')
     user = db.relationship('User', backref='whatsapp_profile')
     messages = db.relationship('WhatsAppMessage', backref='whatsapp_user', lazy=True)
     
@@ -540,6 +569,7 @@ class WhatsAppUser(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'company_id': self.company_id,
             'user_id': self.user_id,
             'whatsapp_number': self.whatsapp_number,
             'is_verified': self.is_verified,
@@ -595,6 +625,7 @@ class WhatsAppTemplate(db.Model):
     __tablename__ = 'whatsapp_templates'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False, unique=True)
     category = db.Column(db.String(50), nullable=False)  # work_order, maintenance, emergency, general
     template_id = db.Column(db.String(100), nullable=False, unique=True)  # WhatsApp template ID
@@ -604,6 +635,9 @@ class WhatsAppTemplate(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    company = db.relationship('Company', backref='whatsapp_templates')
     
     def __repr__(self):
         return f'<WhatsAppTemplate {self.name}>'
@@ -626,6 +660,7 @@ class NotificationLog(db.Model):
     __tablename__ = 'notification_logs'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     notification_type = db.Column(db.String(50), nullable=False)  # whatsapp, email, sms
     recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     recipient_whatsapp_id = db.Column(db.Integer, db.ForeignKey('whatsapp_users.id'))
@@ -640,6 +675,7 @@ class NotificationLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
+    company = db.relationship('Company', backref='notification_logs')
     recipient = db.relationship('User', backref='notifications')
     recipient_whatsapp = db.relationship('WhatsAppUser', backref='notifications')
     work_order = db.relationship('WorkOrder', backref='notifications')
@@ -651,6 +687,7 @@ class NotificationLog(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'company_id': self.company_id,
             'notification_type': self.notification_type,
             'recipient_id': self.recipient_id,
             'recipient_whatsapp_id': self.recipient_whatsapp_id,
@@ -669,6 +706,7 @@ class EmergencyBroadcast(db.Model):
     __tablename__ = 'emergency_broadcasts'
     
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     priority = db.Column(db.String(20), default='high')  # low, medium, high, critical
@@ -681,6 +719,7 @@ class EmergencyBroadcast(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
+    company = db.relationship('Company', backref='emergency_broadcasts')
     equipment = db.relationship('Equipment', backref='emergency_broadcasts')
     location = db.relationship('Location', backref='emergency_broadcasts')
     sent_by = db.relationship('User', backref='sent_emergency_broadcasts')
@@ -691,6 +730,7 @@ class EmergencyBroadcast(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'company_id': self.company_id,
             'title': self.title,
             'message': self.message,
             'priority': self.priority,

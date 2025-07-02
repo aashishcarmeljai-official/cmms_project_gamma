@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}WhatsApp Verification{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fab fa-whatsapp text-success"></i> WhatsApp Verification
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Connect your WhatsApp number to receive real-time notifications about work orders, 
+                        maintenance reminders, and emergency broadcasts.
+                    </p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">WhatsApp Number</label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                   value="{{ phone_number or '' }}" placeholder="+1234567890" required>
+                            <div class="form-text">
+                                Enter your WhatsApp number with country code (e.g., +1 for US)
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="verification_code" class="form-label">Verification Code</label>
+                            <input type="text" class="form-control" id="verification_code" name="verification_code" 
+                                   placeholder="Enter 6-digit code" maxlength="6">
+                            <div class="form-text">
+                                Leave blank to receive a verification code via WhatsApp
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fab fa-whatsapp"></i> 
+                                {% if phone_number %}Verify Code{% else %}Send Verification Code{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> How it works:</h6>
+                        <ol class="mb-0">
+                            <li>Enter your WhatsApp number</li>
+                            <li>Click "Send Verification Code"</li>
+                            <li>Check your WhatsApp for the 6-digit code</li>
+                            <li>Enter the code and click "Verify Code"</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Important:</h6>
+                        <ul class="mb-0">
+                            <li>Your number must be registered with WhatsApp</li>
+                            <li>Verification codes expire after 10 minutes</li>
+                            <li>You can only verify one number per account</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}WhatsApp Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fab fa-whatsapp text-success"></i> WhatsApp Notification Settings
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if whatsapp_user and whatsapp_user.is_verified %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> 
+                            <strong>WhatsApp Connected:</strong> {{ whatsapp_user.whatsapp_number }}
+                        </div>
+                        
+                        <form method="POST">
+                            <h5 class="mb-3">Notification Preferences</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="work_order_assignments" 
+                                               name="work_order_assignments" 
+                                               {% if preferences.get('work_order_assignments', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="work_order_assignments">
+                                            <strong>Work Order Assignments</strong>
+                                            <br><small class="text-muted">Get notified when assigned to new work orders</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="priority_escalations" 
+                                               name="priority_escalations" 
+                                               {% if preferences.get('priority_escalations', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="priority_escalations">
+                                            <strong>Priority Escalations</strong>
+                                            <br><small class="text-muted">Alert when work order priority is increased</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="parts_delivery" 
+                                               name="parts_delivery" 
+                                               {% if preferences.get('parts_delivery', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="parts_delivery">
+                                            <strong>Parts Delivery</strong>
+                                            <br><small class="text-muted">Notify when parts arrive for work orders</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="maintenance_reminders" 
+                                               name="maintenance_reminders" 
+                                               {% if preferences.get('maintenance_reminders', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="maintenance_reminders">
+                                            <strong>Maintenance Reminders</strong>
+                                            <br><small class="text-muted">Scheduled maintenance notifications</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="emergency_broadcasts" 
+                                               name="emergency_broadcasts" 
+                                               {% if preferences.get('emergency_broadcasts', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="emergency_broadcasts">
+                                            <strong>Emergency Broadcasts</strong>
+                                            <br><small class="text-muted">Critical safety and emergency alerts</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="daily_checklists" 
+                                               name="daily_checklists" 
+                                               {% if preferences.get('daily_checklists', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="daily_checklists">
+                                            <strong>Daily Checklists</strong>
+                                            <br><small class="text-muted">Reminders for daily maintenance tasks</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <label for="preferred_language" class="form-label">Preferred Language</label>
+                                <select class="form-select" id="preferred_language" name="preferred_language">
+                                    <option value="en" {% if whatsapp_user.preferred_language == 'en' %}selected{% endif %}>English</option>
+                                    <option value="es" {% if whatsapp_user.preferred_language == 'es' %}selected{% endif %}>Español (Spanish)</option>
+                                    <option value="hi" {% if whatsapp_user.preferred_language == 'hi' %}selected{% endif %}>हिंदी (Hindi)</option>
+                                    <option value="ar" {% if whatsapp_user.preferred_language == 'ar' %}selected{% endif %}>العربية (Arabic)</option>
+                                    <option value="fr" {% if whatsapp_user.preferred_language == 'fr' %}selected{% endif %}>Français (French)</option>
+                                    <option value="de" {% if whatsapp_user.preferred_language == 'de' %}selected{% endif %}>Deutsch (German)</option>
+                                    <option value="pt" {% if whatsapp_user.preferred_language == 'pt' %}selected{% endif %}>Português (Portuguese)</option>
+                                    <option value="zh" {% if whatsapp_user.preferred_language == 'zh' %}selected{% endif %}>中文 (Chinese)</option>
+                                </select>
+                                <div class="form-text">
+                                    Messages will be automatically translated to your preferred language
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-success" onclick="sendTestMessage()">
+                                <i class="fab fa-whatsapp"></i> Send Test Message
+                            </button>
+                        </div>
+                        
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>WhatsApp Not Connected</strong>
+                            <p class="mb-0">You need to verify your WhatsApp number to receive notifications.</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('whatsapp_verify') }}" class="btn btn-success">
+                                <i class="fab fa-whatsapp"></i> Connect WhatsApp
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> About WhatsApp Integration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Features:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Real-time work order notifications</li>
+                        <li><i class="fas fa-check text-success"></i> Interactive status updates</li>
+                        <li><i class="fas fa-check text-success"></i> Photo/video documentation</li>
+                        <li><i class="fas fa-check text-success"></i> Maintenance reminders</li>
+                        <li><i class="fas fa-check text-success"></i> Emergency broadcasts</li>
+                        <li><i class="fas fa-check text-success"></i> Multilingual support</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Commands:</h6>
+                    <ul class="list-unstyled">
+                        <li><code>/wo [number]</code> - View work order</li>
+                        <li><code>/status [number] [status]</code> - Update status</li>
+                        <li><code>/help</code> - Show commands</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendTestMessage() {
+    fetch('/api/whatsapp/send-test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Test message sent successfully! Check your WhatsApp.');
+        } else {
+            alert('Error sending test message: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error sending test message: ' + error);
+    });
+}
+</script>
+{% endblock %} 
