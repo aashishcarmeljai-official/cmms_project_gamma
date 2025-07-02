@@ -67,32 +67,122 @@ A comprehensive web-based Computerized Maintenance Management System (CMMS) buil
 
 ```
 cmms_project_gamma/
-├── app.py                    # Main Flask application
-├── config.py                 # Configuration settings
-├── models.py                 # Database models (User, Equipment, WorkOrder, etc.)
-├── requirements.txt          # Python dependencies
-├── README.md                # This file
-├── WHATSAPP_INTEGRATION_README.md  # WhatsApp integration guide
-├── migrate_whatsapp_tables.py      # WhatsApp database migration
-├── whatsapp_integration.py         # WhatsApp API integration
-├── whatsapp_notifications.py       # WhatsApp notification handlers
-├── whatsapp_webhook.py             # WhatsApp webhook processor
-├── .gitignore               # Git ignore file
-├── templates/               # HTML templates
-│   ├── dashboard.html       # Main dashboard
-│   ├── equipment/           # Equipment templates
-│   ├── work_orders/         # Work order templates
-│   ├── inventory/           # Inventory templates
-│   └── whatsapp/            # WhatsApp integration templates
-│       ├── verify.html      # WhatsApp verification
-│       ├── settings.html    # WhatsApp settings
-│       └── emergency.html   # Emergency broadcast
-└── static/                  # Static files
-    ├── css/
-    │   └── style.css        # Custom styles
-    └── js/
-        └── script.js        # JavaScript functionality
+├── app.py                  # Main Flask application
+├── config.py               # Configuration settings
+├── delete_all_tables.py    # Script to delete all DB tables
+├── extensions.py           # Flask extensions setup
+├── generate_qr_codes.py    # QR code generation script
+├── init_db.py              # Database initialization script
+├── models.py               # SQLAlchemy models
+├── multitenancy.py         # Multi-tenancy utilities
+├── requirements.txt        # Python dependencies
+├── README.md               # Project documentation
+├── whatsapp_integration.py # WhatsApp integration logic
+├── whatsapp_notifications.py # WhatsApp notification logic
+├── whatsapp_webhook.py     # WhatsApp webhook endpoint
+├── instance/
+│   └── cmms.db             # SQLite database (example)
+├── static/
+│   ├── css/
+│   │   └── style.css       # Custom styles
+│   ├── img/
+│   │   └── README.md       # Image assets info
+│   ├── js/
+│   │   ├── media-upload.js # Media upload JS
+│   │   └── script.js       # General JS
+│   ├── manifest.json       # PWA manifest
+│   ├── sw.js               # Service worker
+│   └── uploads/
+│       ├── comments/       # Uploaded comment media
+│       └── work_orders/    # Uploaded work order media
+├── templates/
+│   ├── admin/
+│   │   ├── analytics.html
+│   │   ├── assets.html
+│   │   ├── dashboard.html
+│   │   ├── quick_actions.html
+│   │   ├── settings.html
+│   │   ├── technicians.html
+│   │   ├── users.html
+│   │   └── work_orders.html
+│   ├── base.html
+│   ├── change_password.html
+│   ├── dashboard.html
+│   ├── delete_account.html
+│   ├── equipment/
+│   │   ├── detail.html
+│   │   ├── list.html
+│   │   └── new.html
+│   ├── generate_qr.html
+│   ├── index.html
+│   ├── inventory/
+│   │   ├── detail.html
+│   │   ├── list.html
+│   │   └── new.html
+│   ├── locations/
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── list.html
+│   │   └── new.html
+│   ├── login.html
+│   ├── maintenance_calendar.html
+│   ├── maintenance_schedule_form.html
+│   ├── maps.html
+│   ├── mobile/
+│   │   ├── complete_task.html
+│   │   ├── dashboard.html
+│   │   ├── login.html
+│   │   ├── profile.html
+│   │   ├── task_detail.html
+│   │   └── tasks.html
+│   ├── profile_edit.html
+│   ├── profile.html
+│   ├── qr_failure_report_success.html
+│   ├── qr_failure_report.html
+│   ├── quick_assets/
+│   │   ├── add.html
+│   │   ├── edit.html
+│   │   └── index.html
+│   ├── quick_maintenance_schedule.html
+│   ├── reports/
+│   │   ├── dashboard.html
+│   │   ├── equipment_analytics.html
+│   │   ├── equipment_list.html
+│   │   ├── performance_metrics.html
+│   │   └── task_logs.html
+│   ├── signup.html
+│   ├── sops/
+│   │   ├── detail.html
+│   │   ├── edit.html
+│   │   ├── list.html
+│   │   └── new.html
+│   ├── team_form.html
+│   ├── teams.html
+│   ├── test_qr.html
+│   ├── whatsapp_emergency.html
+│   ├── whatsapp_notifications.html
+│   ├── whatsapp_settings.html
+│   ├── whatsapp_template_edit.html
+│   ├── whatsapp_template_new.html
+│   ├── whatsapp_templates.html
+│   ├── whatsapp_verify.html
+│   ├── work_orders/
+│   │   ├── detail.html
+│   │   ├── list.html
+│   │   └── new.html
+├── Updates and Info/
+│   ├── ADMIN_DASHBOARD_IMPLEMENTATION.md
+│   ├── BASIC_REPORTING_LOGS.md
+│   ├── MEDIA_UPLOAD_SYSTEM.md
+│   ├── MOBILE_TECHNICIAN_VIEW.md
+│   ├── PHOTO_VIDEO_UPLOAD_IMPLEMENTATION.md
+│   ├── QR_CODE_SYSTEM_IMPLEMENTATION.md
+│   ├── QUICK_ASSET_REGISTRY_IMPLEMENTATION.md
+│   ├── SOP_SYSTEM_IMPLEMENTATION.md
+├── WHATSAPP_INTEGRATION_README.md
 ```
+
+_This structure reflects the current organization of the project, including all main modules, templates, static assets, and documentation._
 
 ## 🚀 Setup Instructions
 
